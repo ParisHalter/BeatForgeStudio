@@ -1,0 +1,1260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FL Studio Web DAW - Full Suite Workspace</title>
+  <style>
+    :root {
+      --fl-bg-dark: #121215;
+      --fl-bg-panel: #1b1b21;
+      --fl-bg-panel-lighter: #262630;
+      --fl-border: #383848;
+      --fl-orange: #ff7a00;
+      --fl-orange-hover: #ff9124;
+      --fl-text: #c0c0c8;
+      --fl-text-bright: #ffffff;
+      --fl-step-active: #ff7a00;
+      --fl-step-inactive: #22222b;
+      --fl-blue: #5090ff;
+      --fl-green: #00cc66;
+      --fl-playhead: #00ffcc;
+      --panel-shadow: 0 12px 36px rgba(0,0,0,0.6);
+    }
+
+    * { box-sizing: border-box; user-select: none; }
+
+    body {
+      background-color: var(--fl-bg-dark);
+      color: var(--fl-text);
+      font-family: Tahoma, Arial, sans-serif;
+      margin: 0;
+      padding: 10px;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    .daw-container {
+      width: 100%;
+      max-width: 1600px;
+      height: calc(100vh - 20px);
+      background: var(--fl-bg-panel);
+      border: 2px solid var(--fl-border);
+      border-radius: 4px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .toolbar {
+      background: #15151a;
+      padding: 10px 15px;
+      border-bottom: 2px solid var(--fl-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .logo { font-weight: bold; color: var(--fl-text-bright); font-size: 1.1rem; letter-spacing: 1px; }
+    .logo span { color: var(--fl-orange); }
+
+    .controls-group { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+
+    .btn {
+      background: linear-gradient(to bottom, #3a3a48, #2a2a35);
+      border: 1px solid var(--fl-border);
+      color: var(--fl-text-bright);
+      padding: 5px 12px;
+      font-weight: bold;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+    .btn:hover { background: linear-gradient(to bottom, #4a4a58, #3a3a48); border-color: var(--fl-orange); }
+    .btn.active { background: linear-gradient(to bottom, #d46300, #a84e00); border-color: #ff9124; }
+    .btn-play { background: linear-gradient(to bottom, #d46300, #a84e00); border-color: #ff9124; }
+    .btn-mode { background: linear-gradient(to bottom, #0077cc, #004488); border-color: #00aaff; }
+    .btn-mode.song-mode { background: linear-gradient(to bottom, #00aa55, #006633); border-color: #00cc66; }
+
+    .tempo-box, .time-display-container {
+      background: #0b0b0e;
+      color: #00ffcc;
+      border: 1px solid var(--fl-border);
+      border-radius: 2px;
+      padding: 4px 8px;
+      font-family: monospace;
+    }
+
+    .time-display-container { display: flex; flex-direction: column; align-items: center; cursor: pointer; }
+    .time-display-label { font-size: 0.6rem; color: var(--fl-orange); text-transform: uppercase; font-weight: bold; }
+    .time-display-value { font-size: 1rem; letter-spacing: 1px; }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      min-height: 0;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .browser {
+      background: #141419;
+      border-right: 2px solid var(--fl-border);
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow-y: auto;
+    }
+    .browser-title {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      font-weight: bold;
+      color: var(--fl-orange);
+      border-bottom: 1px solid var(--fl-border);
+      padding-bottom: 4px;
+    }
+    .browser-category { font-size: 0.85rem; color: var(--fl-text-bright); font-weight: bold; }
+    .browser-items { display: flex; flex-direction: column; gap: 4px; padding-left: 8px; }
+    .browser-item {
+      font-size: 0.8rem;
+      background: #1f1f28;
+      border: 1px solid var(--fl-border);
+      padding: 4px 8px;
+      border-radius: 2px;
+      cursor: pointer;
+    }
+    .browser-item:hover, .browser-item.selected { background: var(--fl-orange); color: #000; border-color: #ff9124; }
+
+    .browser-preview {
+      margin-top: auto;
+      border-top: 1px solid var(--fl-border);
+      padding-top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .browser-preview-title {
+      font-size: 0.75rem;
+      color: var(--fl-orange);
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+
+    .browser-preview-file {
+      font-size: 0.8rem;
+      color: var(--fl-text-bright);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .waveform-box {
+      width: 100%;
+      height: 120px;
+      background: #0e0e12;
+      border: 1px solid var(--fl-border);
+      border-radius: 3px;
+      overflow: hidden;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .waveform-box canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .waveform-playhead {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: #ffffff;
+      box-shadow: 0 0 8px rgba(255,255,255,0.8);
+      pointer-events: none;
+      left: 0;
+      display: none;
+    }
+
+    .center-stage { display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+
+    .window-tabs {
+      display: flex;
+      background: #18181f;
+      border-bottom: 2px solid var(--fl-border);
+      gap: 2px;
+      padding: 4px 6px 0 6px;
+    }
+    .w-tab {
+      background: #252530;
+      border: 1px solid var(--fl-border);
+      border-bottom: none;
+      padding: 6px 16px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: var(--fl-text);
+      border-radius: 4px 4px 0 0;
+      cursor: pointer;
+    }
+    .w-tab.active { background: var(--fl-bg-panel); color: var(--fl-text-bright); border-top: 2px solid var(--fl-orange); }
+
+    .window-content { padding: 12px; display: none; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
+    .window-content.active { display: flex; }
+
+    .playlist-main {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      flex: 1;
+      gap: 8px;
+    }
+
+    .playlist-toolbar, .piano-roll-toolbar, .sequencer-toolbar, .mixer-toolbar, .popup-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #15151a;
+      border: 1px solid var(--fl-border);
+      padding: 6px 10px;
+      border-radius: 3px;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .playlist-wrapper {
+      overflow: auto;
+      border: 1px solid var(--fl-border);
+      background: #101014;
+      flex: 1;
+      min-height: 0;
+      position: relative;
+    }
+
+    .playlist-ruler-container {
+      display: flex;
+      background: #181820;
+      border-bottom: 1px solid var(--fl-border);
+      height: 24px;
+      position: sticky;
+      top: 0;
+      z-index: 4;
+    }
+    .playlist-ruler-spacer { width: 180px; border-right: 2px solid var(--fl-border); background: #15151a; }
+    .playlist-ruler-bars { flex-grow: 1; display: flex; position: relative; cursor: pointer; }
+
+    .playlist-container { display: flex; flex-direction: column; width: max-content; position: relative; }
+    .playlist-row { display: flex; align-items: center; background: #141419; border-bottom: 1px solid #22222d; height: 48px; }
+    .playlist-label {
+      width: 180px;
+      background: #18181f;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 8px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      color: var(--fl-text-bright);
+      border-right: 2px solid var(--fl-border);
+      position: sticky;
+      left: 0;
+      z-index: 3;
+      gap: 6px;
+    }
+    .track-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 90px; }
+    .track-actions { display: flex; gap: 3px; }
+
+    .playlist-grid-row {
+      display: flex;
+      height: 100%;
+      flex-grow: 1;
+      position: relative;
+      background-image: linear-gradient(to right, #1a1a24 1px, transparent 1px);
+      background-size: 40px 100%;
+      min-width: 6000px;
+    }
+
+    .playlist-clip {
+      position: absolute;
+      top: 4px;
+      bottom: 4px;
+      background: linear-gradient(to bottom, #00aa55, #007733);
+      border: 1px solid #00ff88;
+      border-radius: 3px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      padding-left: 6px;
+      font-size: 0.7rem;
+      font-weight: bold;
+      color: #fff;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+      overflow: hidden;
+      z-index: 2;
+    }
+    .playlist-clip.selected { border-color: #ffffff; box-shadow: 0 0 6px rgba(255,255,255,0.8); }
+    .playlist-clip span {
+      position: relative;
+      z-index: 1;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+    }
+    .clip-resize-handle {
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: 6px;
+      cursor: e-resize;
+      background: rgba(255,255,255,0.3);
+      z-index: 2;
+    }
+
+    .popup {
+      position: fixed;
+      top: 80px;
+      left: 280px;
+      width: 820px;
+      height: 560px;
+      background: #1b1b21;
+      border: 2px solid var(--fl-border);
+      box-shadow: var(--panel-shadow);
+      display: none;
+      flex-direction: column;
+      z-index: 50;
+      resize: both;
+      overflow: hidden;
+    }
+    .popup.open { display: flex; }
+    .popup.minimized { height: 42px !important; overflow: hidden; resize: none; }
+    .popup-header { border-radius: 0; border: none; border-bottom: 1px solid var(--fl-border); cursor: move; }
+    .popup-title { font-weight: bold; color: var(--fl-text-bright); }
+    .popup-buttons { display: flex; gap: 4px; }
+    .popup-buttons button {
+      width: 24px;
+      height: 24px;
+      border: 1px solid var(--fl-border);
+      background: #252530;
+      color: #fff;
+      border-radius: 2px;
+      cursor: pointer;
+      font-weight: bold;
+      line-height: 1;
+    }
+    .popup-body { display: flex; flex-direction: column; min-height: 0; flex: 1; overflow: hidden; padding: 8px; }
+
+    .channel-rack { display: flex; flex-direction: column; gap: 6px; overflow: auto; flex: 1; }
+    .channel-row { display: flex; align-items: center; background: var(--fl-bg-panel-lighter); border: 1px solid var(--fl-border); border-radius: 3px; padding: 5px 8px; }
+    .channel-info {
+      width: 480px; font-size: 0.8rem; font-weight: bold; color: var(--fl-text-bright);
+      display: flex; justify-content: space-between; align-items: center; padding-right: 8px; border-right: 2px solid var(--fl-border); gap: 4px;
+    }
+    .channel-name-container { display: flex; flex-direction: column; width: 130px; overflow: hidden; }
+    .channel-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+    .channel-name:hover { color: var(--fl-orange); }
+    .channel-key-badge { font-size: 0.55rem; color: #00ffcc; font-family: monospace; }
+    .channel-controls-inner { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .channel-knob-group { display: flex; flex-direction: column; align-items: center; font-size: 0.6rem; color: #999; }
+    .channel-knob-group input[type="range"] { width: 40px; height: 12px; cursor: pointer; }
+    .channel-btn-toggles { display: flex; gap: 2px; }
+    .channel-toggle-btn { background: #1b1b21; border: 1px solid var(--fl-border); color: #777; font-size: 0.65rem; padding: 2px 4px; border-radius: 2px; cursor: pointer; font-weight: bold; }
+    .channel-toggle-btn.active-mute { background: #aa2222; color: #fff; border-color: #ff4444; }
+    .channel-toggle-btn.active-solo { background: #ccaa00; color: #000; border-color: #ffcc00; }
+
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(16, 1fr);
+      gap: 4px;
+      flex-grow: 1;
+      padding-left: 10px;
+      position: relative;
+      background:
+        linear-gradient(to right, rgba(255,255,255,0.06) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255,255,255,0.04) 1px, transparent 1px);
+      background-size: calc(100% / 16) 100%, 100% 100%;
+      background-position: 0 0, 0 0;
+    }
+    .step { aspect-ratio: 1.2; background: var(--fl-step-inactive); border: 1px solid var(--fl-border); border-radius: 2px; cursor: pointer; }
+    .step.active { background: var(--fl-step-active); border-color: #ffb15c; box-shadow: 0 0 5px rgba(255,122,0,0.5); }
+    .step.playing { background: var(--fl-playhead) !important; border-color: #ffffff !important; box-shadow: 0 0 8px rgba(0,255,204,0.7); }
+
+    .piano-ruler-container { display: flex; background: #181820; border: 1px solid var(--fl-border); border-bottom: none; height: 24px; position: relative; overflow: hidden; }
+    .piano-ruler-spacer { width: 80px; min-width: 80px; border-right: 2px solid var(--fl-border); background: #15151a; }
+    .piano-ruler-bars { display: flex; position: relative; cursor: pointer; }
+
+    .piano-roll-outer { display: flex; height: 400px; border: 1px solid var(--fl-border); background: #101014; position: relative; overflow: auto; flex: 1; }
+    .piano-keys { width: 80px; min-width: 80px; display: flex; flex-direction: column; background: #181820; border-right: 2px solid var(--fl-border); position: sticky; left: 0; z-index: 5; }
+    .piano-key { height: 18px; min-height: 18px; border-bottom: 1px solid #282835; font-size: 0.6rem; display: flex; align-items: center; justify-content: flex-end; padding-right: 5px; cursor: pointer; color: #888; }
+    .piano-key.black { background: #09090c; color: #444; }
+    .piano-grid-area {
+      position: relative;
+      height: 1296px;
+      width: 9600px;
+      background:
+        linear-gradient(to right, rgba(255,255,255,0.08) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px);
+      background-size: 40px 100%, 100% 18px;
+      background-color: #101014;
+    }
+    .piano-note { background: var(--fl-blue); border: 1px solid #90c0ff; border-radius: 2px; cursor: pointer; position: absolute; padding: 0 4px; z-index: 2; }
+    .piano-note.step-seq-note { background: var(--fl-orange); border-color: #ffd29c; }
+    .piano-note.selected { border-color: #ffffff; box-shadow: 0 0 6px rgba(255,255,255,0.8); }
+
+    .playhead-line { position: absolute; top: 0; bottom: 0; width: 2px; background-color: var(--fl-playhead); z-index: 10; pointer-events: none; box-shadow: 0 0 6px var(--fl-playhead); transition: left 0.05s linear; }
+
+    .mixer-container { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; background: #141419; padding: 10px; border: 1px solid var(--fl-border); overflow: auto; flex: 1; }
+    .mixer-strip { background: var(--fl-bg-panel-lighter); border: 1px solid var(--fl-border); border-radius: 3px; padding: 10px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .mixer-name { font-size: 0.75rem; font-weight: bold; color: var(--fl-text-bright); }
+    .mixer-slider { writing-mode: bt-lr; -webkit-appearance: slider-vertical; width: 25px; height: 140px; background: #121215; }
+    .fx-slot { font-size: 0.7rem; background: #1c1c24; border: 1px solid var(--fl-border); width: 100%; text-align: center; padding: 3px; color: #888; }
+  </style>
+</head>
+<body>
+  <div class="daw-container">
+    <div class="toolbar">
+      <div class="logo">BEAT<span>FORGE</span> STUDIO</div>
+      <div class="controls-group">
+        <div style="display:flex; gap:4px; border-right:2px solid var(--fl-border); padding-right:10px;">
+          <button class="btn" onclick="newProject()">📂 New</button>
+          <button class="btn" onclick="saveProject()">💾 Save</button>
+          <button class="btn" onclick="loadProjectPrompt()">📁 Load</button>
+          <button class="btn" onclick="undo()" title="Undo">&lt;</button>
+          <button class="btn" onclick="redo()" title="Redo">&gt;</button>
+        </div>
+        <div style="display:flex; align-items:center; gap:4px;">
+          BPM:
+          <div style="display:flex; flex-direction:column; gap:1px;">
+            <button class="btn" style="padding:0 4px; font-size:0.55rem; line-height:1;" onclick="changeBpm(1)">▲</button>
+            <button class="btn" style="padding:0 4px; font-size:0.55rem; line-height:1;" onclick="changeBpm(-1)">▼</button>
+          </div>
+          <span id="bpmDisplay" class="tempo-box">130</span>
+        </div>
+        <div class="time-display-container" id="timeDisplayContainer" title="Click to toggle time mode" onclick="toggleTimeMode()">
+          <div class="time-display-label" id="timeDisplayLabel">Beats / Bars</div>
+          <div class="time-display-value" id="timeDisplayValue">1 : 1</div>
+        </div>
+        <button class="btn btn-mode" id="modeBtn" onclick="togglePlaybackMode()">Mode: PATTERN</button>
+        <button class="btn btn-play" id="playBtn" onclick="togglePlay()">▶ PLAY</button>
+        <button class="btn" id="stopBtn" onclick="stopPlay()">⏹ STOP</button>
+      </div>
+    </div>
+
+    <div class="workspace">
+      <div class="browser">
+        <div class="browser-title">Project Browser</div>
+        <div class="browser-category">📂 Generators</div>
+        <div class="browser-items">
+          <div class="browser-item" onclick="addChannel('3x Osc Synth', 'synth')">+ 3x Osc Synth</div>
+          <div class="browser-item" onclick="addChannel('Sub Bass', 'bass')">+ Sub Bass</div>
+        </div>
+        <div class="browser-category">📂 Drum Presets</div>
+        <div class="browser-items">
+          <div class="browser-item" onclick="addChannel('Trap Kick', 'kick')">+ Trap Kick</div>
+          <div class="browser-item" onclick="addChannel('Snap Claves', 'clap')">+ Snap Claves</div>
+        </div>
+        <div class="browser-category">📂 Samples</div>
+        <div class="browser-items">
+          <div class="browser-item" onclick="document.getElementById('audioFileInput').click()">+ Import Audio File...</div>
+        </div>
+        <input type="file" id="audioFileInput" accept="audio/*" style="display:none;" onchange="importAudioSample(event)">
+        <div class="browser-preview">
+          <div class="browser-preview-title">Highlighted File</div>
+          <div class="browser-preview-file" id="browserPreviewFile">No file selected</div>
+          <div class="waveform-box" id="waveformBox" onclick="previewSelectedAudio(event)">
+            <canvas id="browserWaveformCanvas"></canvas>
+            <div class="waveform-playhead" id="waveformPlayhead"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="center-stage">
+        <div class="window-tabs">
+          <div class="w-tab active" onclick="showMainPlaylist()">Playlist</div>
+          <div class="w-tab" onclick="openPopup('sequencerPopup')">Step Sequencer</div>
+          <div class="w-tab" onclick="openPopup('pianoPopup')">Piano Roll</div>
+          <div class="w-tab" onclick="openPopup('mixerPopup')">Mixer</div>
+        </div>
+
+        <div id="tab-playlist" class="window-content active">
+          <div class="playlist-main">
+            <div class="playlist-toolbar">
+              <span style="font-size:0.8rem; font-weight:bold; color:var(--fl-orange);">Arrangement Playlist</span>
+              <div style="display:flex; gap:6px; align-items:center;">
+                <button class="btn" id="playlistTimeModeBtn" onclick="togglePlaylistTimeMode()">Time: Beats/Bars</button>
+                <button class="btn" id="stretchToggleBtn" onclick="toggleStretchMode()">Stretch: OFF</button>
+                <button class="btn" onclick="chopActiveClip()">✂ Chop</button>
+                <button class="btn" onclick="splitActiveClip()">⚡ Split</button>
+                <button class="btn" style="padding:3px 8px; font-size:0.75rem;" onclick="addPlaylistTrack()">+ Add Track</button>
+              </div>
+            </div>
+            <div class="playlist-wrapper" id="playlistWrapper">
+              <div class="playlist-ruler-container">
+                <div class="playlist-ruler-spacer"></div>
+                <div class="playlist-ruler-bars" id="playlistRulerBars" onclick="playlistRulerSeek(event)"></div>
+              </div>
+              <div class="playlist-container" id="playlistContainer"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="popup open" id="sequencerPopup">
+    <div class="popup-header">
+      <div class="popup-title">Step Sequencer</div>
+      <div class="popup-buttons">
+        <button onclick="togglePopupSize('sequencerPopup')">▢</button>
+        <button onclick="closePopup('sequencerPopup')">×</button>
+      </div>
+    </div>
+    <div class="popup-body">
+      <div class="sequencer-toolbar">
+        <span style="font-size: 0.75rem; color: #888;">Channel Rack</span>
+        <button class="btn" style="padding:2px 6px; font-size:0.7rem;" onclick="addChannel('New Synth', 'synth')">+ Add Channel</button>
+      </div>
+      <div class="channel-rack" id="channelRack"></div>
+    </div>
+  </div>
+
+  <div class="popup" id="pianoPopup">
+    <div class="popup-header">
+      <div class="popup-title">Piano Roll</div>
+      <div class="popup-buttons">
+        <button onclick="togglePopupSize('pianoPopup')">▢</button>
+        <button onclick="closePopup('pianoPopup')">×</button>
+      </div>
+    </div>
+    <div class="popup-body">
+      <div class="piano-roll-toolbar">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:0.8rem; font-weight:bold; color:var(--fl-orange);">Target:</span>
+          <select id="pianoTrackSelect" class="btn" onchange="changeActivePianoTrack(this.value)"></select>
+        </div>
+        <div style="display:flex; gap:4px; flex-wrap:wrap;">
+          <button class="btn" onclick="renameChannel(activePianoTrackIndex)">Rename</button>
+          <button class="btn" onclick="replaceChannelPrompt(activePianoTrackIndex)">Replace</button>
+          <button class="btn" onclick="deleteChannel(activePianoTrackIndex)">Delete</button>
+          <button class="btn" onclick="openActiveTrackInPiano()">Open Track</button>
+        </div>
+        <div class="pr-tools-group">
+          <button class="btn active" id="toolSnap" onclick="toggleSnapGrid()">🧲 Snap</button>
+          <button class="btn" onclick="clearActivePianoNotes()">Clear Notes</button>
+          <button class="btn" onclick="quickQuantizeNotes()">Quantize</button>
+        </div>
+      </div>
+      <div class="piano-ruler-container" id="pianoRulerContainer">
+        <div class="piano-ruler-spacer"></div>
+        <div class="piano-ruler-bars" id="pianoRulerBars" onclick="rulerSeek(event)"></div>
+      </div>
+      <div class="piano-roll-outer" id="pianoRollOuter" onscroll="syncScroll()">
+        <div class="piano-keys" id="pianoKeys"></div>
+        <div class="piano-grid-area" id="pianoGrid" onmousedown="onGridMouseDown(event)" onmousemove="onGridMouseMove(event)" onmouseup="onGridMouseUp(event)">
+          <canvas id="pianoGridCanvas" style="position:absolute; top:0; left:0; pointer-events:none;"></canvas>
+          <div class="playhead-line" id="pianoPlayhead" style="left:0px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="popup" id="mixerPopup">
+    <div class="popup-header">
+      <div class="popup-title">Mixer</div>
+      <div class="popup-buttons">
+        <button onclick="togglePopupSize('mixerPopup')">▢</button>
+        <button onclick="closePopup('mixerPopup')">×</button>
+      </div>
+    </div>
+    <div class="popup-body">
+      <div class="mixer-container" id="mixerContainer"></div>
+    </div>
+  </div>
+
+  <script>
+    let audioCtx = null;
+    let channels = [
+      { name: 'Trap Kick', type: 'kick', volume: 0.8, pan: 0, muted: false, solo: false, steps: Array(16).fill(false), notes: [], buffer: null },
+      { name: 'Snap Claves', type: 'clap', volume: 0.8, pan: 0, muted: false, solo: false, steps: Array(16).fill(false), notes: [], buffer: null },
+      { name: '3x Osc Synth', type: 'synth', volume: 0.8, pan: 0, muted: false, solo: false, steps: Array(16).fill(false), notes: [], buffer: null }
+    ];
+    let mixerTracks = [{ name: 'Master', volume: 0.8, muted: false }, { name: 'Insert 1', volume: 0.8, muted: false }, { name: 'Insert 2', volume: 0.8, muted: false }];
+    let playlistTracks = [{ name: 'Track 1', clips: [] }, { name: 'Track 2', clips: [] }];
+    let activePianoTrackIndex = 0, snapToGrid = true, isPlaying = false, currentSubdivision = 0, timerId = null, bpm = 130;
+    let playlistTimeModeBars = true, timeModeBars = true, playbackMode = 'pattern';
+    let playingTimeouts = [], activeSources = [], browserFiles = [];
+    let waveformPreviewSource = null, waveformPreviewTimer = null;
+    let stretchMode = false, selectedClip = null;
+    let undoStack = [], redoStack = [];
+
+    const TOTAL_SUBDIVISIONS = 600, SUBDIV_WIDTH = 40;
+    const NOTES_LIST = ['B', 'A#', 'A', 'G#', 'G', 'F#', 'F', 'E', 'D#', 'D', 'C#', 'C'];
+
+    function initAudio() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    function registerActiveSource(node) {
+      if (node) activeSources.push(node);
+      return node;
+    }
+
+    function stopAllAudio() {
+      playingTimeouts.forEach(t => clearTimeout(t));
+      playingTimeouts = [];
+      activeSources.forEach(node => {
+        try { node.stop?.(); } catch (e) {}
+        try { node.disconnect?.(); } catch (e) {}
+      });
+      activeSources = [];
+      stopWaveformPreview();
+    }
+
+    function stopWaveformPreview() {
+      if (waveformPreviewTimer) clearInterval(waveformPreviewTimer);
+      waveformPreviewTimer = null;
+      const line = document.getElementById('waveformPlayhead');
+      if (line) line.style.display = 'none';
+      if (waveformPreviewSource) {
+        try { waveformPreviewSource.stop(); } catch (e) {}
+        try { waveformPreviewSource.disconnect(); } catch (e) {}
+      }
+      waveformPreviewSource = null;
+    }
+
+    function drawWaveform(buffer, canvas) {
+      if (!canvas || !buffer) return;
+      const ctx = canvas.getContext('2d');
+      const width = canvas.clientWidth || 300;
+      const height = canvas.clientHeight || 120;
+      canvas.width = width;
+      canvas.height = height;
+      ctx.fillStyle = '#0e0e12';
+      ctx.fillRect(0, 0, width, height);
+
+      const data = buffer.getChannelData(0);
+      const step = Math.ceil(data.length / width);
+      const amp = height / 2;
+
+      ctx.strokeStyle = '#00cc66';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+
+      for (let i = 0; i < width; i++) {
+        let min = 1.0, max = -1.0;
+        for (let j = 0; j < step; j++) {
+          const datum = data[(i * step) + j];
+          if (datum < min) min = datum;
+          if (datum > max) max = datum;
+        }
+        ctx.moveTo(i, (1 + min) * amp);
+        ctx.lineTo(i, (1 + max) * amp);
+      }
+      ctx.stroke();
+    }
+
+    function updateBrowserPreview() {
+      const previewFile = document.getElementById('browserPreviewFile');
+      const canvas = document.getElementById('browserWaveformCanvas');
+      const activeSample = channels.find(c => c.buffer) || (browserFiles.length > 0 ? browserFiles[0] : null);
+      if (activeSample && activeSample.buffer) {
+        previewFile.textContent = activeSample.name;
+        drawWaveform(activeSample.buffer, canvas);
+      } else {
+        previewFile.textContent = 'No file selected';
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+
+    function previewSelectedAudio() {
+      const sample = channels.find(c => c.buffer) || (browserFiles.length > 0 ? browserFiles[0] : null);
+      if (!sample || !sample.buffer) return;
+      stopWaveformPreview();
+      initAudio();
+      waveformPreviewSource = playSampleBuffer(sample.buffer, 0.8, 0, null, 1.0, false);
+      const line = document.getElementById('waveformPlayhead');
+      line.style.display = 'block';
+      let startT = audioCtx.currentTime;
+      let dur = sample.buffer.duration;
+      waveformPreviewTimer = setInterval(() => {
+        let elapsed = audioCtx.currentTime - startT;
+        if (elapsed >= dur) {
+          stopWaveformPreview();
+        } else {
+          let pct = (elapsed / dur) * 100;
+          line.style.left = `${pct}%`;
+        }
+      }, 30);
+    }
+
+    function playTone(freq, type = 'sine', duration = 0.2, volume = 0.8, pan = 0, masterGainNode = null) {
+      initAudio(); if (!audioCtx) return;
+      const t = audioCtx.currentTime, osc = registerActiveSource(audioCtx.createOscillator()), gain = audioCtx.createGain();
+      osc.type = type; osc.frequency.setValueAtTime(freq, t);
+      gain.gain.setValueAtTime(0.0001, t); gain.gain.exponentialRampToValueAtTime(Math.max(0.001, 0.25 * volume), t + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
+      const panner = audioCtx.createStereoPanner ? audioCtx.createStereoPanner() : null;
+      if (panner) panner.pan.setValueAtTime(pan, t);
+      const dst = masterGainNode || audioCtx.destination;
+      osc.connect(gain); if (panner) { gain.connect(panner); panner.connect(dst); } else gain.connect(dst);
+      osc.start(t); osc.stop(t + duration);
+    }
+
+    function playSampleBuffer(buffer, volume = 0.8, pan = 0, masterGainNode = null, playbackRate = 1.0, stretch = false) {
+      initAudio(); if (!audioCtx || !buffer) return;
+      const src = registerActiveSource(audioCtx.createBufferSource()), gain = audioCtx.createGain(), panner = audioCtx.createStereoPanner ? audioCtx.createStereoPanner() : null;
+      src.buffer = buffer; src.playbackRate.setValueAtTime(stretch ? 1.0 : playbackRate, audioCtx.currentTime);
+      gain.gain.setValueAtTime(volume, audioCtx.currentTime); if (panner) panner.pan.setValueAtTime(pan, audioCtx.currentTime);
+      const dst = masterGainNode || audioCtx.destination;
+      src.connect(gain); if (panner) { gain.connect(panner); panner.connect(dst); } else gain.connect(dst);
+      src.start();
+      return src;
+    }
+
+    function playSound(channel, noteFreq = null, notePitch = null) {
+      if (!channel || channel.muted) return; initAudio(); if (!audioCtx) return;
+      const vol = channel.volume ?? 0.8, pan = channel.pan ?? 0, mixerNode = channel.gainNode || null, stretch = channel.stretch || false;
+      if (channel.type === 'sample' && channel.buffer) {
+        let rate = 1.0;
+        if (notePitch !== null && channel.rootKeyPitch !== undefined) rate = Math.pow(2, (notePitch - channel.rootKeyPitch) / 12);
+        playSampleBuffer(channel.buffer, vol, pan, mixerNode, rate, stretch); return;
+      }
+      if (noteFreq !== null) return playTone(noteFreq, channel.type === 'bass' ? 'square' : 'sawtooth', 0.25, vol, pan, mixerNode);
+      if (channel.type === 'kick') playTone(140, 'sine', 0.4, vol, pan, mixerNode);
+      else if (channel.type === 'clap') playTone(800, 'square', 0.08, vol, pan, mixerNode);
+      else if (channel.type === 'synth') playTone(440, 'sawtooth', 0.25, vol, pan, mixerNode);
+      else if (channel.type === 'bass') playTone(110, 'square', 0.3, vol, pan, mixerNode);
+      else playTone(300, 'sine', 0.1, vol, pan, mixerNode);
+    }
+
+    function midiToFreq(midiNote) {
+      return 440 * Math.pow(2, (midiNote - 69) / 12);
+    }
+
+    function togglePlay() {
+      if (isPlaying) {
+        stopPlay();
+      } else {
+        startPlay();
+      }
+    }
+
+    function startPlay() {
+      initAudio();
+      stopPlay();
+      isPlaying = true;
+      document.getElementById('playBtn').classList.add('active');
+      const stepTime = (60 / bpm) / 4; 
+      let currentSub = currentSubdivision;
+      
+      const intervalMs = stepTime * 1000;
+      timerId = setInterval(() => {
+        channels.forEach((ch) => {
+          if (playbackMode === 'pattern') {
+            if (ch.steps[currentSub % 16]) {
+              playSound(ch);
+            }
+          }
+          ch.notes.forEach(note => {
+            if (playbackMode === 'pattern' && note.start === (currentSub % 16)) {
+              playSound(ch, midiToFreq(note.pitch), note.pitch);
+            } else if (playbackMode === 'song' && note.start === currentSub) {
+              playSound(ch, midiToFreq(note.pitch), note.pitch);
+            }
+          });
+        });
+
+        if (playbackMode === 'song') {
+          playlistTracks.forEach(track => {
+            track.clips.forEach(clip => {
+              if (currentSub >= clip.start && currentSub < clip.start + clip.duration) {
+                let localStep = (currentSub - clip.start) % 16;
+                channels.forEach(ch => {
+                  if (ch.steps[localStep]) {
+                    playSound(ch);
+                  }
+                });
+              }
+            });
+          });
+        }
+
+        updatePlayheadUI(currentSub);
+        currentSubdivision = (currentSubdivision + 1) % TOTAL_SUBDIVISIONS;
+        currentSub = currentSubdivision;
+      }, intervalMs);
+    }
+
+    function stopPlay() {
+      isPlaying = false;
+      document.getElementById('playBtn').classList.remove('active');
+      if (timerId) clearInterval(timerId);
+      timerId = null;
+      stopAllAudio();
+      updatePlayheadUI(0);
+    }
+
+    function updatePlayheadUI(subdiv) {
+      const leftPos = subdiv * SUBDIV_WIDTH;
+      const pianoPh = document.getElementById('pianoPlayhead');
+      if (pianoPh) pianoPh.style.left = leftPos + 'px';
+
+      const bars = Math.floor(subdiv / 16) + 1;
+      const beats = Math.floor((subdiv % 16) / 4) + 1;
+      const valEl = document.getElementById('timeDisplayValue');
+      if (valEl) valEl.textContent = `${bars} : ${beats}`;
+    }
+
+    function changeBpm(delta) {
+      bpm = Math.max(40, Math.min(300, bpm + delta));
+      document.getElementById('bpmDisplay').textContent = bpm;
+    }
+
+    function togglePlaybackMode() {
+      playbackMode = playbackMode === 'pattern' ? 'song' : 'pattern';
+      const btn = document.getElementById('modeBtn');
+      if (playbackMode === 'song') {
+        btn.textContent = 'Mode: SONG';
+        btn.classList.add('song-mode');
+      } else {
+        btn.textContent = 'Mode: PATTERN';
+        btn.classList.remove('song-mode');
+      }
+    }
+
+    function toggleTimeMode() {
+      timeModeBars = !timeModeBars;
+      document.getElementById('timeDisplayLabel').textContent = timeModeBars ? 'Beats / Bars' : 'Seconds';
+    }
+
+    function openPopup(id) {
+      document.getElementById(id).classList.add('open');
+      if (id === 'sequencerPopup') renderChannelRack();
+      if (id === 'pianoPopup') { renderPianoKeys(); renderPianoGrid(); updatePianoTrackSelect(); }
+      if (id === 'mixerPopup') renderMixer();
+    }
+
+    function closePopup(id) {
+      document.getElementById(id).classList.remove('open');
+    }
+
+    function togglePopupSize(id) {
+      document.getElementById(id).classList.toggle('minimized');
+    }
+
+    function showMainPlaylist() {
+      document.querySelectorAll('.w-tab').forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+      renderPlaylist();
+    }
+
+    function renderChannelRack() {
+      const container = document.getElementById('channelRack');
+      if (!container) return;
+      container.innerHTML = '';
+      channels.forEach((ch, idx) => {
+        const row = document.createElement('div');
+        row.className = 'channel-row';
+        row.innerHTML = `
+          <div class="channel-info">
+            <div class="channel-name-container">
+              <span class="channel-name" onclick="openChannelPiano(${idx})">${ch.name}</span>
+              <span class="channel-key-badge">${ch.type}</span>
+            </div>
+            <div class="channel-controls-inner">
+              <button class="btn" style="padding:2px 6px; font-size:0.65rem;" onclick="openChannelPiano(${idx})">🎹 Open</button>
+              <div class="channel-knob-group">
+                <span>VOL</span>
+                <input type="range" min="0" max="1" step="0.01" value="${ch.volume}" oninput="updateChannelVol(${idx}, this.value)">
+              </div>
+              <div class="channel-knob-group">
+                <span>PAN</span>
+                <input type="range" min="-1" max="1" step="0.01" value="${ch.pan}" oninput="updateChannelPan(${idx}, this.value)">
+              </div>
+              <div class="channel-btn-toggles">
+                <button class="channel-toggle-btn ${ch.muted ? 'active-mute' : ''}" onclick="toggleChannelMute(${idx})">M</button>
+                <button class="channel-toggle-btn ${ch.solo ? 'active-solo' : ''}" onclick="toggleChannelSolo(${idx})">S</button>
+              </div>
+            </div>
+          </div>
+          <div class="steps-grid">
+            ${ch.steps.map((active, sIdx) => `<div class="step ${active ? 'active' : ''}" onclick="toggleStep(${idx}, ${sIdx})"></div>`).join('')}
+          </div>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    function toggleStep(chIdx, stepIdx) {
+      channels[chIdx].steps[stepIdx] = !channels[chIdx].steps[stepIdx];
+      renderChannelRack();
+    }
+
+    function updateChannelVol(idx, val) { channels[idx].volume = parseFloat(val); }
+    function updateChannelPan(idx, val) { channels[idx].pan = parseFloat(val); }
+    function toggleChannelMute(idx) { channels[idx].muted = !channels[idx].muted; renderChannelRack(); }
+    function toggleChannelSolo(idx) { channels[idx].solo = !channels[idx].solo; renderChannelRack(); }
+
+    function addChannel(name, type) {
+      channels.push({ name, type, volume: 0.8, pan: 0, muted: false, solo: false, steps: Array(16).fill(false), notes: [], buffer: null });
+      renderChannelRack();
+      updatePianoTrackSelect();
+    }
+
+    function deleteChannel(idx) {
+      if (channels.length <= 1) return;
+      channels.splice(idx, 1);
+      activePianoTrackIndex = Math.min(activePianoTrackIndex, channels.length - 1);
+      renderChannelRack();
+      updatePianoTrackSelect();
+      renderPianoGrid();
+    }
+
+    function renameChannel(idx) {
+      if (idx < 0 || idx >= channels.length) return;
+      const newName = prompt('Rename channel:', channels[idx].name);
+      if (newName) {
+        channels[idx].name = newName;
+        renderChannelRack();
+        updatePianoTrackSelect();
+      }
+    }
+
+    function replaceChannelPrompt(idx) {
+      if (idx < 0 || idx >= channels.length) return;
+      const type = prompt('Enter new type (synth, bass, kick, clap):', channels[idx].type);
+      if (type) {
+        channels[idx].type = type;
+        channels[idx].name = type.toUpperCase() + ' Channel';
+        renderChannelRack();
+        updatePianoTrackSelect();
+      }
+    }
+
+    function openChannelPiano(idx) {
+      activePianoTrackIndex = idx;
+      openPopup('pianoPopup');
+      document.getElementById('pianoTrackSelect').value = idx;
+    }
+
+    function openActiveTrackInPiano() {
+      openPopup('pianoPopup');
+    }
+
+    function updatePianoTrackSelect() {
+      const sel = document.getElementById('pianoTrackSelect');
+      if (!sel) return;
+      sel.innerHTML = channels.map((ch, idx) => `<option value="${idx}" ${idx === activePianoTrackIndex ? 'selected' : ''}>${ch.name}</option>`).join('');
+    }
+
+    function changeActivePianoTrack(val) {
+      activePianoTrackIndex = parseInt(val);
+      renderPianoGrid();
+    }
+
+    function renderPianoKeys() {
+      const container = document.getElementById('pianoKeys');
+      if (!container) return;
+      let html = '';
+      for (let midi = 127; midi >= 0; midi--) {
+        const noteName = NOTES_LIST[midi % 12] + Math.floor(midi / 12 - 1);
+        const isBlack = [1, 3, 6, 8, 10].includes(midi % 12);
+        html += `<div class="piano-key ${isBlack ? 'black' : ''}" onclick="playPianoKeyPreview(${midi})">${noteName}</div>`;
+      }
+      container.innerHTML = html;
+    }
+
+    function playPianoKeyPreview(midi) {
+      playSound(channels[activePianoTrackIndex], midiToFreq(midi), midi);
+    }
+
+    function renderPianoGrid() {
+      const grid = document.getElementById('pianoGrid');
+      if (!grid) return;
+      grid.querySelectorAll('.piano-note').forEach(el => el.remove());
+
+      const ch = channels[activePianoTrackIndex];
+      if (!ch || !ch.notes) return;
+
+      ch.notes.forEach((note, nIdx) => {
+        const noteEl = document.createElement('div');
+        noteEl.className = 'piano-note';
+        noteEl.style.left = (note.start * SUBDIV_WIDTH) + 'px';
+        noteEl.style.top = ((127 - note.pitch) * 18) + 'px';
+        noteEl.style.width = (note.duration * SUBDIV_WIDTH) + 'px';
+        noteEl.style.height = '17px';
+        noteEl.title = `Pitch: ${note.pitch}`;
+        noteEl.onclick = (e) => {
+          e.stopPropagation();
+          ch.notes.splice(nIdx, 1);
+          renderPianoGrid();
+        };
+        grid.appendChild(noteEl);
+      });
+
+      const rulerBars = document.getElementById('pianoRulerBars');
+      if (rulerBars) {
+        let barsHtml = '';
+        for (let i = 0; i < 150; i++) {
+          barsHtml += `<div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">${i+1}</div>`;
+        }
+        rulerBars.innerHTML = barsHtml;
+      }
+    }
+
+    function toggleSnapGrid() {
+      snapToGrid = !snapToGrid;
+      const btn = document.getElementById('toolSnap');
+      btn.classList.toggle('active', snapToGrid);
+    }
+
+    function clearActivePianoNotes() {
+      channels[activePianoTrackIndex].notes = [];
+      renderPianoGrid();
+    }
+
+    function quickQuantizeNotes() {
+      const ch = channels[activePianoTrackIndex];
+      ch.notes.forEach(note => {
+        note.start = Math.round(note.start / 4) * 4;
+      });
+      renderPianoGrid();
+    }
+
+    function onGridMouseDown(e) {
+      if (e.button !== 0) return;
+      const rect = e.currentTarget.getBoundingClientRect();
+      const scrollLeft = document.getElementById('pianoRollOuter').scrollLeft;
+      const x = e.clientX - rect.left + scrollLeft;
+      const y = e.clientY - rect.top;
+      
+      const subdiv = Math.floor(x / SUBDIV_WIDTH);
+      const pitch = 127 - Math.floor(y / 18);
+
+      channels[activePianoTrackIndex].notes.push({ start: subdiv, pitch: pitch, duration: 4 });
+      renderPianoGrid();
+    }
+
+    function onGridMouseMove(e) {}
+    function onGridMouseUp(e) {}
+    function syncScroll() {}
+
+    function rulerSeek(e) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const subdiv = Math.floor(x / (SUBDIV_WIDTH * 4));
+      currentSubdivision = subdiv * 4;
+      updatePlayheadUI(currentSubdivision);
+    }
+
+    function renderPlaylist() {
+      const container = document.getElementById('playlistContainer');
+      if (!container) return;
+      container.innerHTML = '';
+      playlistTracks.forEach((track, tIdx) => {
+        const row = document.createElement('div');
+        row.className = 'playlist-row';
+        row.innerHTML = `
+          <div class="playlist-label">
+            <span class="track-name">${track.name}</span>
+            <div class="track-actions">
+              <button class="btn" style="padding:1px 4px; font-size:0.6rem;" onclick="removePlaylistTrack(${tIdx})">×</button>
+            </div>
+          </div>
+          <div class="playlist-grid-row" onclick="addPlaylistClip(${tIdx}, event)">
+            ${track.clips.map((clip, cIdx) => `
+              <div class="playlist-clip ${selectedClip && selectedClip.tIdx === tIdx && selectedClip.cIdx === cIdx ? 'selected' : ''}" style="left:${clip.start * SUBDIV_WIDTH}px; width:${clip.duration * SUBDIV_WIDTH}px;" onclick="selectClip(event, ${tIdx}, ${cIdx})">
+                <span>Pattern Clip</span>
+                <div class="clip-resize-handle"></div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+        container.appendChild(row);
+      });
+
+      const ruler = document.getElementById('playlistRulerBars');
+      if (ruler) {
+        let html = '';
+        for (let i = 0; i < 150; i++) {
+          html += `<div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">${i+1}</div>`;
+        }
+        ruler.innerHTML = html;
+      }
+    }
+
+    function addPlaylistTrack() {
+      playlistTracks.push({ name: `Track ${playlistTracks.length + 1}`, clips: [] });
+      renderPlaylist();
+    }
+
+    function removePlaylistTrack(idx) {
+      if (playlistTracks.length <= 1) return;
+      playlistTracks.splice(idx, 1);
+      renderPlaylist();
+    }
+
+    function addPlaylistClip(trackIdx, e) {
+      if (e.target !== e.currentTarget) return;
+      const rect = e.currentTarget.getBoundingClientRect();
+      const wrapper = document.getElementById('playlistWrapper');
+      const scrollLeft = wrapper ? wrapper.scrollLeft : 0;
+      const x = e.clientX - rect.left + scrollLeft;
+      const subdiv = Math.floor(x / SUBDIV_WIDTH);
+      playlistTracks[trackIdx].clips.push({ start: subdiv, duration: 16 });
+      renderPlaylist();
+    }
+
+    function selectClip(e, tIdx, cIdx) {
+      e.stopPropagation();
+      selectedClip = { tIdx, cIdx };
+      renderPlaylist();
+    }
+
+    function chopActiveClip() {
+      if (!selectedClip) return;
+      const clip = playlistTracks[selectedClip.tIdx].clips[selectedClip.cIdx];
+      if (clip.duration > 4) {
+        const half = clip.duration / 2;
+        clip.duration = half;
+        playlistTracks[selectedClip.tIdx].clips.push({ start: clip.start + half, duration: half });
+        renderPlaylist();
+      }
+    }
+
+    function splitActiveClip() {
+      chopActiveClip();
+    }
+
+    function toggleStretchMode() {
+      stretchMode = !stretchMode;
+      const btn = document.getElementById('stretchToggleBtn');
+      btn.textContent = `Stretch: ${stretchMode ? 'ON' : 'OFF'}`;
+      btn.classList.toggle('active', stretchMode);
+    }
+
+    function playlistRulerSeek(e) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const wrapper = document.getElementById('playlistWrapper');
+      const scrollLeft = wrapper ? wrapper.scrollLeft : 0;
+      const x = e.clientX - rect.left + scrollLeft;
+      const subdiv = Math.floor(x / SUBDIV_WIDTH);
+      currentSubdivision = subdiv;
+      updatePlayheadUI(currentSubdivision);
+    }
+
+    function renderMixer() {
+      const container = document.getElementById('mixerContainer');
+      if (!container) return;
+      container.innerHTML = '';
+      mixerTracks.forEach((track, idx) => {
+        const strip = document.createElement('div');
+        strip.className = 'mixer-strip';
+        strip.innerHTML = `
+          <div class="mixer-name">${track.name}</div>
+          <div class="fx-slot">EQ 2</div>
+          <div class="fx-slot">Reverb 2</div>
+          <input type="range" class="mixer-slider" min="0" max="1" step="0.01" value="${track.volume}" oninput="updateMixerVol(${idx}, this.value)">
+          <button class="channel-toggle-btn ${track.muted ? 'active-mute' : ''}" onclick="toggleMixerMute(${idx})">M</button>
+        `;
+        container.appendChild(strip);
+      });
+    }
+
+    function updateMixerVol(idx, val) { mixerTracks[idx].volume = parseFloat(val); }
+    function toggleMixerMute(idx) { mixerTracks[idx].muted = !mixerTracks[idx].muted; renderMixer(); }
+
+    function newProject() {
+      if (confirm('Create new project? Unsaved changes will be lost.')) {
+        channels = [{ name: 'Trap Kick', type: 'kick', volume: 0.8, pan: 0, muted: false, solo: false, steps: Array(16).fill(false), notes: [], buffer: null }];
+        playlistTracks = [{ name: 'Track 1', clips: [] }];
+        renderChannelRack();
+        renderPlaylist();
+        renderMixer();
+      }
+    }
+
+    function saveProject() {
+      const data = JSON.stringify({ bpm, channels, playlistTracks, mixerTracks });
+      const blob = new Blob([data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'project.beatforge';
+      a.click();
+    }
+
+    function loadProjectPrompt() {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.beatforge,.json';
+      input.onchange = e => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = event => {
+          try {
+            const proj = JSON.parse(event.target.result);
+            bpm = proj.bpm || 130;
+            channels = proj.channels || channels;
+            playlistTracks = proj.playlistTracks || playlistTracks;
+            mixerTracks = proj.mixerTracks || mixerTracks;
+            document.getElementById('bpmDisplay').textContent = bpm;
+            renderChannelRack();
+            renderPlaylist();
+            renderMixer();
+            updatePianoTrackSelect();
+          } catch(err) {
+            alert('Invalid project file format.');
+          }
+        };
+        reader.readAsText(file);
+      };
+      input.click();
+    }
+
+    function importAudioSample(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = event => {
+        initAudio();
+        audioCtx.decodeAudioData(event.target.result, buffer => {
+          channels.push({
+            name: file.name.substring(0, 12),
+            type: 'sample',
+            volume: 0.8,
+            pan: 0,
+            muted: false,
+            solo: false,
+            steps: Array(16).fill(false),
+            notes: [],
+            buffer: buffer,
+            rootKeyPitch: 60
+          });
+          renderChannelRack();
+          updatePianoTrackSelect();
+          updateBrowserPreview();
+        });
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function undo() { if (undoStack.length > 0) {} }
+    function redo() { if (redoStack.length > 0) {} }
+
+    window.onload = () => {
+      renderChannelRack();
+      renderPlaylist();
+      renderMixer();
+      updatePianoTrackSelect();
+    };
+  </script>
+</body>
+</html>
