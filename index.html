@@ -1,1551 +1,230 @@
-<html lang="en"><head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FL Studio Web DAW - Full Suite Workspace</title>
-  <style>
-    :root {
-      --bg: #0c0e12;
-      --panel: #141820;
-      --panel-2: #1a1f29;
-      --panel-3: #222936;
-      --border: #2d3442;
-      --text: #d7dde7;
-      --muted: #8c97a8;
-      --accent: #ff7a00;
-      --accent-2: #ff9a3d;
-      --good: #20c05c;
-      --blue: #4d8dff;
-      --shadow: 0 16px 40px rgba(0,0,0,0.5);
-      --radius: 12px;
-    }
-
-    * { box-sizing: border-box; user-select: none; }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      overflow: hidden;
-      background:
-        radial-gradient(circle at top left, rgba(255,122,0,0.12), transparent 28%),
-        linear-gradient(180deg, #11151d 0%, #090b0f 100%);
-      color: var(--text);
-      font-family: Inter, Segoe UI, Arial, sans-serif;
-      padding: 10px;
-    }
-
-    .daw-container {
-      width: 100%;
-      height: calc(100vh - 20px);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      background: linear-gradient(180deg, #131821, #0f131a);
-      border: 1px solid #2b3240;
-      border-radius: 16px;
-      box-shadow: var(--shadow);
-    }
-
-    .toolbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
-      padding: 10px 14px;
-      background: rgba(18, 22, 30, 0.95);
-      border-bottom: 1px solid var(--border);
-      backdrop-filter: blur(8px);
-    }
-
-    .toolbar-left {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-weight: 800;
-      letter-spacing: 1px;
-      color: #fff;
-    }
-
-    .logo-badge {
-      width: 34px;
-      height: 34px;
-      border-radius: 10px;
-      display: grid;
-      place-items: center;
-      background: linear-gradient(180deg, var(--accent), #c95800);
-      color: #fff;
-      box-shadow: 0 8px 18px rgba(255,122,0,0.25);
-    }
-
-    .logo span { color: var(--accent); }
-
-    .controls-group {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .btn {
-      background: linear-gradient(180deg, #273041, #1d2431);
-      border: 1px solid #354055;
-      color: var(--text);
-      padding: 7px 11px;
-      border-radius: 10px;
-      cursor: pointer;
-      font-weight: 700;
-      font-size: 0.82rem;
-    }
-    .btn:hover { border-color: var(--accent); }
-    .btn.active { background: linear-gradient(180deg, #ff8b1e, #c85d00); color: #fff; }
-    .btn-play { background: linear-gradient(180deg, #ff8b1e, #c85d00); color: #fff; }
-    .btn-mode.song-mode { background: linear-gradient(180deg, #23b35d, #16743c); color: #fff; }
-
-    .tempo-box, .time-display-container {
-      background: #0a0d12;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 6px 10px;
-      color: #7fffd4;
-      font-family: monospace;
-    }
-
-    .time-display-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-width: 92px;
-    }
-
-    .time-display-label {
-      color: var(--accent);
-      font-size: 0.6rem;
-      text-transform: uppercase;
-      font-weight: 800;
-    }
-
-    .time-display-value { font-size: 1rem; }
-
-    .workspace {
-      display: grid;
-      grid-template-columns: 260px 1fr;
-      min-height: 0;
-      flex: 1;
-      overflow: hidden;
-    }
-
-    .browser {
-      background: linear-gradient(180deg, #121722, #0e1218);
-      border-right: 1px solid var(--border);
-      padding: 12px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .browser-title, .browser-category, .browser-preview-title, .w-tab {
-      letter-spacing: 0.3px;
-    }
-
-    .browser-title {
-      font-size: 0.78rem;
-      text-transform: uppercase;
-      font-weight: 800;
-      color: var(--accent);
-      padding-bottom: 6px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .browser-category {
-      font-size: 0.84rem;
-      font-weight: 800;
-      color: #fff;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .browser-category::before { content: "▸"; color: var(--accent); }
-
-    .browser-items { display: flex; flex-direction: column; gap: 6px; padding-left: 8px; }
-
-    .browser-item {
-      background: #1b2230;
-      border: 1px solid var(--border);
-      padding: 7px 9px;
-      border-radius: 10px;
-      cursor: pointer;
-      font-size: 0.8rem;
-    }
-    .browser-item:hover { background: var(--accent); color: #000; }
-
-    .browser-preview {
-      margin-top: auto;
-      border-top: 1px solid var(--border);
-      padding-top: 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .browser-preview-title {
-      font-size: 0.75rem;
-      color: var(--accent);
-      font-weight: 800;
-      text-transform: uppercase;
-    }
-
-    .browser-preview-file {
-      font-size: 0.82rem;
-      color: #fff;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .waveform-box {
-      width: 100%;
-      height: 120px;
-      border-radius: 12px;
-      overflow: hidden;
-      border: 1px solid var(--border);
-      background: #0a0d12;
-      position: relative;
-    }
-
-    .waveform-box canvas { width: 100%; height: 100%; display: block; }
-
-    .waveform-playhead {
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      width: 2px;
-      background: #fff;
-      left: 0;
-      display: none;
-      pointer-events: none;
-    }
-
-    .center-stage { display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
-
-    .window-tabs {
-      display: flex;
-      gap: 6px;
-      padding: 8px;
-      background: rgba(16, 20, 28, 0.95);
-      border-bottom: 1px solid var(--border);
-      overflow-x: auto;
-    }
-
-    .w-tab {
-      background: #1a2130;
-      border: 1px solid var(--border);
-      padding: 8px 16px;
-      border-radius: 999px;
-      font-weight: 800;
-      font-size: 0.84rem;
-      color: var(--text);
-      cursor: pointer;
-      white-space: nowrap;
-    }
-    .w-tab.active { background: var(--accent); color: #000; border-color: #ffb15c; }
-
-    .window-content {
-      padding: 12px;
-      display: none;
-      flex-direction: column;
-      flex: 1;
-      min-height: 0;
-      overflow: hidden;
-    }
-    .window-content.active { display: flex; }
-
-    .playlist-main { display: flex; flex-direction: column; min-height: 0; flex: 1; gap: 10px; }
-
-    .playlist-toolbar, .piano-roll-toolbar, .sequencer-toolbar, .mixer-toolbar, .popup-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-      padding: 8px 10px;
-      border-radius: 12px;
-      background: linear-gradient(180deg, #171d28, #121722);
-      border: 1px solid var(--border);
-    }
-
-    .playlist-wrapper {
-      overflow: auto;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      background: #0b0f14;
-      flex: 1;
-      min-height: 0;
-      position: relative;
-    }
-
-    .playlist-ruler-container {
-      display: flex;
-      height: 26px;
-      background: #151b25;
-      border-bottom: 1px solid var(--border);
-      position: sticky;
-      top: 0;
-      z-index: 4;
-    }
-
-    .playlist-ruler-spacer { width: 180px; border-right: 1px solid var(--border); background: #10151d; }
-    .playlist-ruler-bars { flex: 1; position: relative; cursor: pointer; }
-
-    .playlist-container { display: flex; flex-direction: column; width: max-content; position: relative; }
-
-    .playlist-row {
-      display: flex;
-      align-items: center;
-      background: #0f141c;
-      border-bottom: 1px solid #1f2734;
-      height: 50px;
-    }
-
-    .playlist-label {
-      width: 180px;
-      height: 100%;
-      position: sticky;
-      left: 0;
-      z-index: 3;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0 8px;
-      background: #111723;
-      border-right: 1px solid var(--border);
-      font-size: 0.75rem;
-      font-weight: 800;
-      color: #fff;
-      gap: 6px;
-    }
-
-    .track-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-    .playlist-grid-row {
-      flex: 1;
-      min-width: 6000px;
-      height: 100%;
-      position: relative;
-      background-image: linear-gradient(to right, #1a2130 1px, transparent 1px);
-      background-size: 40px 100%;
-    }
-
-    .playlist-clip {
-      position: absolute;
-      top: 4px;
-      bottom: 4px;
-      border-radius: 10px;
-      overflow: hidden;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      padding-left: 8px;
-      font-size: 0.72rem;
-      font-weight: 800;
-      color: #fff;
-      background: linear-gradient(180deg, #1eb35a, #118742);
-      border: 1px solid #2cff88;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.25);
-    }
-    .playlist-clip.selected { border-color: #fff; }
-
-    .playlist-clip span { position: relative; z-index: 2; text-shadow: 0 1px 2px rgba(0,0,0,0.65); }
-
-    .clip-resize-handle {
-      position: absolute;
-      right: 0;
-      top: 0;
-      bottom: 0;
-      width: 8px;
-      cursor: e-resize;
-      background: rgba(255,255,255,0.18);
-    }
-
-    .clip-waveform {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      opacity: 0.9;
-      pointer-events: none;
-    }
-
-    .popup {
-      position: fixed;
-      top: 80px;
-      left: 280px;
-      width: 820px;
-      height: 560px;
-      background: #151b25;
-      border: 1px solid #2d3442;
-      border-radius: 16px;
-      box-shadow: var(--shadow);
-      display: none;
-      flex-direction: column;
-      z-index: 50;
-      resize: both;
-      overflow: hidden;
-    }
-    .popup.open { display: flex; }
-    .popup.minimized { height: 42px !important; overflow: hidden; resize: none; }
-
-    .popup-title { font-weight: 800; color: #fff; }
-    .popup-header { border-radius: 0; border: none; border-bottom: 1px solid var(--border); cursor: move; }
-    .popup-buttons { display: flex; gap: 6px; }
-    .popup-buttons button {
-      width: 26px;
-      height: 26px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      background: #1d2431;
-      color: #fff;
-      cursor: pointer;
-      font-weight: 800;
-    }
-
-    .popup-body { display: flex; flex-direction: column; min-height: 0; flex: 1; overflow: hidden; padding: 10px; }
-
-    .channel-rack { display: flex; flex-direction: column; gap: 8px; overflow: auto; flex: 1; }
-    .channel-row {
-      display: flex;
-      align-items: center;
-      background: #1a2130;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 8px;
-    }
-
-    .channel-info {
-      width: 480px;
-      font-size: 0.8rem;
-      font-weight: 800;
-      color: #fff;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding-right: 10px;
-      border-right: 1px solid var(--border);
-      gap: 6px;
-    }
-
-    .channel-name-container { display: flex; flex-direction: column; width: 130px; overflow: hidden; }
-    .channel-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
-    .channel-name:hover { color: var(--accent); }
-    .channel-key-badge { font-size: 0.55rem; color: #7fffd4; font-family: monospace; }
-    .channel-controls-inner { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-    .channel-knob-group { display: flex; flex-direction: column; align-items: center; font-size: 0.6rem; color: var(--muted); }
-    .channel-knob-group input[type="range"] { width: 40px; height: 12px; cursor: pointer; }
-    .channel-btn-toggles { display: flex; gap: 2px; }
-    .channel-toggle-btn {
-      background: #10151d;
-      border: 1px solid var(--border);
-      color: #9099a8;
-      font-size: 0.65rem;
-      padding: 2px 5px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 800;
-    }
-    .channel-toggle-btn.active-mute { background: #b02a2a; color: #fff; }
-    .channel-toggle-btn.active-solo { background: #d8b500; color: #000; }
-
-    .steps-grid {
-      display: grid;
-      grid-template-columns: repeat(16, 1fr);
-      gap: 4px;
-      flex-grow: 1;
-      padding-left: 10px;
-    }
-
-    .step { aspect-ratio: 1.2; background: #1a1f29; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; }
-    .step.active { background: var(--accent); border-color: #ffb15c; }
-    .step.playing { background: #00ffcc !important; border-color: #fff !important; }
-
-    .piano-ruler-container {
-      display: flex;
-      height: 24px;
-      border: 1px solid var(--border);
-      border-bottom: none;
-      background: #151b25;
-    }
-
-    .piano-ruler-spacer { width: 80px; min-width: 80px; border-right: 1px solid var(--border); background: #10151d; }
-    .piano-ruler-bars { display: flex; position: relative; cursor: pointer; }
-
-    .piano-roll-outer {
-      display: flex;
-      height: 400px;
-      border: 1px solid var(--border);
-      background: #0b0f14;
-      position: relative;
-      overflow: auto;
-      flex: 1;
-      border-radius: 12px;
-    }
-
-    .piano-keys {
-      width: 80px;
-      min-width: 80px;
-      display: flex;
-      flex-direction: column;
-      background: #111723;
-      border-right: 1px solid var(--border);
-      position: sticky;
-      left: 0;
-      z-index: 5;
-    }
-
-    .piano-key {
-      height: 18px;
-      min-height: 18px;
-      border-bottom: 1px solid #222a38;
-      font-size: 0.6rem;
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      padding-right: 5px;
-      cursor: pointer;
-      color: #8c97a8;
-    }
-    .piano-key.black { background: #090c10; color: #55606f; }
-
-    .piano-grid-area {
-      position: relative;
-      height: 1296px;
-      width: 9600px;
-      background:
-        linear-gradient(to right, rgba(255,255,255,0.08) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px);
-      background-size: 40px 100%, 100% 18px;
-      background-color: #0b0f14;
-    }
-
-    .piano-note {
-      background: var(--blue);
-      border: 1px solid #9dc0ff;
-      border-radius: 6px;
-      cursor: grab;
-      position: absolute;
-      padding: 0 4px;
-      z-index: 2;
-      overflow: hidden;
-    }
-
-    .piano-note.step-seq-note { background: var(--accent); border-color: #ffd29c; }
-
-    .note-resize-handle {
-      position: absolute;
-      top: 0;
-      right: 0;
-      width: 8px;
-      height: 100%;
-      cursor: ew-resize;
-      background: rgba(255,255,255,0.22);
-    }
-
-    .playhead-line {
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      width: 2px;
-      background: #00ffcc;
-      z-index: 10;
-      pointer-events: none;
-    }
-
-    .mixer-container {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 10px;
-      background: #0f141c;
-      padding: 10px;
-      border: 1px solid var(--border);
-      overflow: auto;
-      flex: 1;
-      border-radius: 12px;
-    }
-
-    .mixer-strip {
-      background: #1a2130;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 10px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .mixer-name { font-size: 0.75rem; font-weight: 800; color: #fff; }
-    .mixer-slider { writing-mode: bt-lr; -webkit-appearance: slider-vertical; width: 25px; height: 140px; }
-    .fx-slot { font-size: 0.7rem; background: #121722; border: 1px solid var(--border); width: 100%; text-align: center; padding: 3px; color: var(--muted); border-radius: 8px; }
-
-    .hidden-input { display: none; }
-  </style>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Melody Maker</title>
+
+  <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-  <div class="daw-container">
-    <div class="toolbar">
-      <div class="toolbar-left">
-        <button class="btn" onclick="exportAppPackage()">⬇ Download App</button>
-        <div class="logo"><div class="logo-badge">B</div>BEAT<span>FORGE</span> STUDIO</div>
-      </div>
-      <div class="controls-group">
-        <div style="display:flex; gap:4px; border-right:1px solid var(--border); padding-right:10px;">
-          <button class="btn" onclick="newProject()">📂 New</button>
-          <button class="btn" onclick="saveProject()">💾 Save</button>
-          <button class="btn" onclick="loadProjectPrompt()">📁 Load</button>
-          <button class="btn" onclick="undo()" title="Undo">↶</button>
-          <button class="btn" onclick="redo()" title="Redo">↷</button>
-        </div>
-        <div style="display:flex; align-items:center; gap:4px;">
-          BPM:
-          <div style="display:flex; flex-direction:column; gap:1px;">
-            <button class="btn" style="padding:0 4px; font-size:0.55rem; line-height:1;" onclick="changeBpm(1)">▲</button>
-            <button class="btn" style="padding:0 4px; font-size:0.55rem; line-height:1;" onclick="changeBpm(-1)">▼</button>
-          </div>
-          <span id="bpmDisplay" class="tempo-box">130</span>
-        </div>
-        <div class="time-display-container" id="timeDisplayContainer" title="Click to toggle time mode" onclick="toggleTimeMode()">
-          <div class="time-display-label" id="timeDisplayLabel">Beats / Bars</div>
-          <div class="time-display-value" id="timeDisplayValue">1 : 1</div>
-        </div>
-        <button class="btn btn-mode" id="modeBtn" onclick="togglePlaybackMode()">Mode: PATTERN</button>
-        <button class="btn btn-play" id="playBtn" onclick="togglePlay()">▶ PLAY</button>
-        <button class="btn" id="stopBtn" onclick="stopPlay()">⏹ STOP</button>
-      </div>
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+
+    <div class="logo">
+      <span>●</span> Melody Maker
     </div>
 
-    <div class="workspace">
-      <div class="browser">
-        <div class="browser-title">Project Browser</div>
-        <div class="browser-category">Generators</div>
-        <div class="browser-items">
-          <div class="browser-item" onclick="addChannel('3x Osc Synth', 'synth')">+ 3x Osc Synth</div>
-          <div class="browser-item" onclick="addChannel('Sub Bass', 'bass')">+ Sub Bass</div>
-        </div>
-        <div class="browser-category">Drum Presets</div>
-        <div class="browser-items">
-          <div class="browser-item" onclick="addChannel('Trap Kick', 'kick')">+ Trap Kick</div>
-          <div class="browser-item" onclick="addChannel('Snap Claves', 'clap')">+ Snap Claves</div>
-        </div>
-        <div class="browser-category">Samples</div>
-        <div class="browser-items">
-          <div class="browser-item" onclick="document.getElementById('audioFileInput').click()">+ Import Audio File...</div>
-          <div class="browser-item" onclick="document.getElementById('folderInput').click()">+ Import Drumkit Folder...</div>
-        </div>
-        <input type="file" id="audioFileInput" accept="audio/*" class="hidden-input" onchange="importAudioSample(event)">
-        <input type="file" id="folderInput" webkitdirectory="" directory="" multiple="" class="hidden-input" onchange="importDrumkitFolder(event)">
-        <div class="browser-preview">
-          <div class="browser-preview-title">Highlighted File</div>
-          <div class="browser-preview-file" id="browserPreviewFile">No file selected</div>
-          <div class="waveform-box" id="waveformBox" onclick="previewSelectedAudio(event)">
-            <canvas id="browserWaveformCanvas"></canvas>
-            <div class="waveform-playhead" id="waveformPlayhead"></div>
-          </div>
-        </div>
-      </div>
+    <button id="playBtn">▶ Play</button>
+    <button id="stopBtn">■ Stop</button>
+    <button id="loopBtn" class="active">Loop</button>
 
-      <div class="center-stage">
-        <div class="window-tabs">
-          <div class="w-tab active" onclick="showMainPlaylist()">Playlist</div>
-          <div class="w-tab" onclick="openPopup('sequencerPopup')">Step Sequencer</div>
-          <div class="w-tab" onclick="openPopup('pianoPopup')">Piano Roll</div>
-          <div class="w-tab" onclick="openPopup('mixerPopup')">Mixer</div>
-        </div>
-
-        <div id="tab-playlist" class="window-content active">
-          <div class="playlist-main">
-            <div class="playlist-toolbar">
-              <span style="font-size:0.8rem; font-weight:800; color:var(--accent);">Arrangement Playlist</span>
-              <div style="display:flex; gap:6px; align-items:center;">
-                <button class="btn" id="playlistTimeModeBtn" onclick="togglePlaylistTimeMode()">Time: Beats/Bars</button>
-                <button class="btn" id="stretchToggleBtn" onclick="toggleStretchMode()">Stretch: OFF</button>
-                <button class="btn" onclick="chopActiveClip()">✂ Chop</button>
-                <button class="btn" onclick="splitActiveClip()">⚡ Split</button>
-                <button class="btn" style="padding:3px 8px; font-size:0.75rem;" onclick="addPlaylistTrack()">+ Add Track</button>
-              </div>
-            </div>
-            <div class="playlist-wrapper" id="playlistWrapper">
-              <div class="playlist-ruler-container">
-                <div class="playlist-ruler-spacer"></div>
-                <div class="playlist-ruler-bars" id="playlistRulerBars" onclick="playlistRulerSeek(event)"><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">1</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">2</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">3</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">4</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">5</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">6</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">7</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">8</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">9</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">10</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">11</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">12</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">13</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">14</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">15</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">16</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">17</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">18</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">19</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">20</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">21</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">22</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">23</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">24</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">25</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">26</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">27</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">28</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">29</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">30</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">31</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">32</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">33</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">34</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">35</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">36</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">37</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">38</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">39</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">40</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">41</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">42</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">43</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">44</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">45</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">46</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">47</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">48</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">49</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">50</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">51</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">52</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">53</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">54</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">55</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">56</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">57</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">58</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">59</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">60</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">61</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">62</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">63</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">64</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">65</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">66</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">67</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">68</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">69</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">70</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">71</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">72</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">73</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">74</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">75</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">76</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">77</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">78</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">79</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">80</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">81</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">82</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">83</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">84</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">85</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">86</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">87</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">88</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">89</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">90</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">91</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">92</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">93</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">94</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">95</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">96</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">97</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">98</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">99</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">100</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">101</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">102</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">103</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">104</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">105</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">106</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">107</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">108</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">109</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">110</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">111</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">112</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">113</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">114</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">115</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">116</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">117</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">118</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">119</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">120</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">121</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">122</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">123</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">124</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">125</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">126</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">127</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">128</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">129</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">130</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">131</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">132</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">133</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">134</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">135</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">136</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">137</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">138</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">139</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">140</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">141</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">142</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">143</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">144</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">145</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">146</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">147</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">148</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">149</div><div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">150</div></div>
-              </div>
-              <div class="playlist-container" id="playlistContainer"><div class="playlist-row">
-          <div class="playlist-label">
-            <span class="track-name">Track 1</span>
-            <div class="track-actions">
-              <button class="btn" style="padding:1px 4px; font-size:0.6rem;" onclick="removePlaylistTrack(0)">×</button>
-            </div>
-          </div>
-          <div class="playlist-grid-row" onclick="addPlaylistClip(0, event)">
-            
-          </div>
-        </div><div class="playlist-row">
-          <div class="playlist-label">
-            <span class="track-name">Track 2</span>
-            <div class="track-actions">
-              <button class="btn" style="padding:1px 4px; font-size:0.6rem;" onclick="removePlaylistTrack(1)">×</button>
-            </div>
-          </div>
-          <div class="playlist-grid-row" onclick="addPlaylistClip(1, event)">
-            
-          </div>
-        </div></div>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div class="control">
+      <label>BPM</label>
+      <input id="bpm" type="number" min="40" max="240" value="140" style="width:65px">
     </div>
+
+    <div class="control">
+      <label>Steps</label>
+      <select id="steps">
+        <option>8</option>
+        <option selected>16</option>
+        <option>32</option>
+        <option>64</option>
+      </select>
+    </div>
+
+    <div class="control">
+      <label>Master</label>
+      <input id="master" type="range" min="0" max="1" step=".01" value=".8">
+    </div>
+
+    <button id="clearBtn">Clear</button>
+    <button id="saveBtn">Save</button>
+    <button id="loadBtn">Load</button>
+    <button id="exportBtn">Export WAV</button>
+
+    <input id="fileInput" type="file" accept="audio/*" multiple hidden>
+
+    <button id="importBtn">Import Samples</button>
+
   </div>
 
-  <div class="popup open" id="sequencerPopup">
-    <div class="popup-header">
-      <div class="popup-title">Step Sequencer</div>
-      <div class="popup-buttons">
-        <button onclick="togglePopupSize('sequencerPopup')">▢</button>
-        <button onclick="closePopup('sequencerPopup')">×</button>
+
+  <div class="main">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+
+      <div class="section">
+
+        <h3>Scale</h3>
+
+        <div class="section-content">
+
+          <div class="row">
+            <label>Key</label>
+
+            <select id="key">
+              <option>C</option>
+              <option>C#</option>
+              <option>D</option>
+              <option>D#</option>
+              <option>E</option>
+              <option>F</option>
+              <option>F#</option>
+              <option>G</option>
+              <option>G#</option>
+              <option>A</option>
+              <option>A#</option>
+              <option>B</option>
+            </select>
+          </div>
+
+          <div class="row">
+            <label>Scale</label>
+
+            <select id="scale">
+              <option value="chromatic">Chromatic</option>
+              <option value="major">Major</option>
+              <option value="minor" selected>Minor</option>
+              <option value="harmonicMinor">Harmonic Minor</option>
+              <option value="pentatonic">Pentatonic</option>
+              <option value="blues">Blues</option>
+            </select>
+          </div>
+
+          <label class="small">
+            <input type="checkbox" id="scaleHighlight" checked>
+            Highlight scale
+          </label>
+
+        </div>
+
       </div>
-    </div>
-    <div class="popup-body">
-      <div class="sequencer-toolbar">
-        <span style="font-size: 0.75rem; color: var(--muted);">Channel Rack</span>
-        <button class="btn" style="padding:2px 6px; font-size:0.7rem;" onclick="addChannel('New Synth', 'synth')">+ Add Channel</button>
+
+
+      <div class="section">
+
+        <h3>Selected Note</h3>
+
+        <div class="section-content">
+
+          <div id="noteInfo" class="small">
+            No note selected
+          </div>
+
+          <div class="row" style="margin-top:9px">
+            <label>Velocity</label>
+          </div>
+
+          <input id="velocity" type="range" min="0" max="1" step=".01" value=".8">
+
+          <button id="deleteBtn" class="full" style="margin-top:8px">
+            Delete Note
+          </button>
+
+        </div>
+
       </div>
-      <div class="channel-rack" id="channelRack"><div class="channel-row">
-          <div class="channel-info">
-            <div class="channel-name-container">
-              <span class="channel-name" onclick="openChannelPiano(0)">Trap Kick</span>
-              <span class="channel-key-badge">kick</span>
-            </div>
-            <div class="channel-controls-inner">
-              <button class="btn" style="padding:2px 6px; font-size:0.65rem;" onclick="openChannelPiano(0)">🎹 Open</button>
-              <div class="channel-knob-group">
-                <span>VOL</span>
-                <input type="range" min="0" max="1" step="0.01" value="0.8" oninput="updateChannelVol(0, this.value)">
-              </div>
-              <div class="channel-knob-group">
-                <span>PAN</span>
-                <input type="range" min="-1" max="1" step="0.01" value="0" oninput="updateChannelPan(0, this.value)">
-              </div>
-              <div class="channel-btn-toggles">
-                <button class="channel-toggle-btn " onclick="toggleChannelMute(0)">M</button>
-                <button class="channel-toggle-btn " onclick="toggleChannelSolo(0)">S</button>
-              </div>
-            </div>
+
+
+      <div class="section">
+
+        <h3>Imported Samples</h3>
+
+        <div class="section-content">
+
+          <div id="samples"></div>
+
+          <div class="small">
+            Imported samples are pitched from C4.
           </div>
-          <div class="steps-grid">
-            <div class="step " onclick="toggleStep(0, 0)"></div><div class="step " onclick="toggleStep(0, 1)"></div><div class="step " onclick="toggleStep(0, 2)"></div><div class="step " onclick="toggleStep(0, 3)"></div><div class="step " onclick="toggleStep(0, 4)"></div><div class="step " onclick="toggleStep(0, 5)"></div><div class="step " onclick="toggleStep(0, 6)"></div><div class="step " onclick="toggleStep(0, 7)"></div><div class="step " onclick="toggleStep(0, 8)"></div><div class="step " onclick="toggleStep(0, 9)"></div><div class="step " onclick="toggleStep(0, 10)"></div><div class="step " onclick="toggleStep(0, 11)"></div><div class="step " onclick="toggleStep(0, 12)"></div><div class="step " onclick="toggleStep(0, 13)"></div><div class="step " onclick="toggleStep(0, 14)"></div><div class="step " onclick="toggleStep(0, 15)"></div>
+
+        </div>
+
+      </div>
+
+
+      <div class="section">
+
+        <h3>Keyboard</h3>
+
+        <div class="section-content">
+
+          <div class="key-map">
+
+            Z S X D C V G B H N J M<br>
+            C3–B3<br><br>
+
+            Q 2 W 3 E R 5 T 6 Y 7 U<br>
+            C4–B4<br><br>
+
+            Click cells to create notes.<br>
+            Right-click notes to delete.<br>
+            Double-click a note to preview.
+
           </div>
-        </div><div class="channel-row">
-          <div class="channel-info">
-            <div class="channel-name-container">
-              <span class="channel-name" onclick="openChannelPiano(1)">Snap Claves</span>
-              <span class="channel-key-badge">clap</span>
-            </div>
-            <div class="channel-controls-inner">
-              <button class="btn" style="padding:2px 6px; font-size:0.65rem;" onclick="openChannelPiano(1)">🎹 Open</button>
-              <div class="channel-knob-group">
-                <span>VOL</span>
-                <input type="range" min="0" max="1" step="0.01" value="0.8" oninput="updateChannelVol(1, this.value)">
-              </div>
-              <div class="channel-knob-group">
-                <span>PAN</span>
-                <input type="range" min="-1" max="1" step="0.01" value="0" oninput="updateChannelPan(1, this.value)">
-              </div>
-              <div class="channel-btn-toggles">
-                <button class="channel-toggle-btn " onclick="toggleChannelMute(1)">M</button>
-                <button class="channel-toggle-btn " onclick="toggleChannelSolo(1)">S</button>
-              </div>
-            </div>
-          </div>
-          <div class="steps-grid">
-            <div class="step " onclick="toggleStep(1, 0)"></div><div class="step " onclick="toggleStep(1, 1)"></div><div class="step " onclick="toggleStep(1, 2)"></div><div class="step " onclick="toggleStep(1, 3)"></div><div class="step " onclick="toggleStep(1, 4)"></div><div class="step " onclick="toggleStep(1, 5)"></div><div class="step " onclick="toggleStep(1, 6)"></div><div class="step " onclick="toggleStep(1, 7)"></div><div class="step " onclick="toggleStep(1, 8)"></div><div class="step " onclick="toggleStep(1, 9)"></div><div class="step " onclick="toggleStep(1, 10)"></div><div class="step " onclick="toggleStep(1, 11)"></div><div class="step " onclick="toggleStep(1, 12)"></div><div class="step " onclick="toggleStep(1, 13)"></div><div class="step " onclick="toggleStep(1, 14)"></div><div class="step " onclick="toggleStep(1, 15)"></div>
-          </div>
-        </div><div class="channel-row">
-          <div class="channel-info">
-            <div class="channel-name-container">
-              <span class="channel-name" onclick="openChannelPiano(2)">3x Osc Synth</span>
-              <span class="channel-key-badge">synth</span>
-            </div>
-            <div class="channel-controls-inner">
-              <button class="btn" style="padding:2px 6px; font-size:0.65rem;" onclick="openChannelPiano(2)">🎹 Open</button>
-              <div class="channel-knob-group">
-                <span>VOL</span>
-                <input type="range" min="0" max="1" step="0.01" value="0.8" oninput="updateChannelVol(2, this.value)">
-              </div>
-              <div class="channel-knob-group">
-                <span>PAN</span>
-                <input type="range" min="-1" max="1" step="0.01" value="0" oninput="updateChannelPan(2, this.value)">
-              </div>
-              <div class="channel-btn-toggles">
-                <button class="channel-toggle-btn " onclick="toggleChannelMute(2)">M</button>
-                <button class="channel-toggle-btn " onclick="toggleChannelSolo(2)">S</button>
-              </div>
-            </div>
-          </div>
-          <div class="steps-grid">
-            <div class="step " onclick="toggleStep(2, 0)"></div><div class="step " onclick="toggleStep(2, 1)"></div><div class="step " onclick="toggleStep(2, 2)"></div><div class="step " onclick="toggleStep(2, 3)"></div><div class="step " onclick="toggleStep(2, 4)"></div><div class="step " onclick="toggleStep(2, 5)"></div><div class="step " onclick="toggleStep(2, 6)"></div><div class="step " onclick="toggleStep(2, 7)"></div><div class="step " onclick="toggleStep(2, 8)"></div><div class="step " onclick="toggleStep(2, 9)"></div><div class="step " onclick="toggleStep(2, 10)"></div><div class="step " onclick="toggleStep(2, 11)"></div><div class="step " onclick="toggleStep(2, 12)"></div><div class="step " onclick="toggleStep(2, 13)"></div><div class="step " onclick="toggleStep(2, 14)"></div><div class="step " onclick="toggleStep(2, 15)"></div>
-          </div>
-        </div></div>
-    </div>
+
+        </div>
+
+      </div>
+
+    </aside>
+
+
+    <!-- WORKSPACE -->
+    <main class="workspace">
+
+      <div class="roll-toolbar">
+
+        <button id="paintBtn" class="active">
+          ✎ Paint
+        </button>
+
+        <button id="selectBtn">
+          ↖ Select
+        </button>
+
+        <label>Note Length</label>
+
+        <select id="noteLength">
+
+          <option value=".25">1/16</option>
+          <option value=".5">1/8</option>
+          <option value="1" selected>1/4</option>
+          <option value="2">1/2</option>
+          <option value="4">1 bar</option>
+
+        </select>
+
+        <span class="small">
+          Samples are automatically pitched from C4.
+        </span>
+
+      </div>
+
+
+      <div id="rollArea" class="roll-area">
+
+        <div id="roll" class="piano"></div>
+
+      </div>
+
+
+      <div id="status" class="status">
+        Ready. Import a sample, then click the piano roll.
+      </div>
+
+    </main>
+
   </div>
 
-  <div class="popup" id="pianoPopup">
-    <div class="popup-header">
-      <div class="popup-title">Piano Roll</div>
-      <div class="popup-buttons">
-        <button onclick="togglePopupSize('pianoPopup')">▢</button>
-        <button onclick="closePopup('pianoPopup')">×</button>
-      </div>
-    </div>
-    <div class="popup-body">
-      <div class="piano-roll-toolbar">
-        <div style="display:flex; align-items:center; gap:8px;">
-          <span style="font-size:0.8rem; font-weight:800; color:var(--accent);">Target:</span>
-          <select id="pianoTrackSelect" class="btn" onchange="changeActivePianoTrack(this.value)"><option value="0" selected="">Trap Kick</option><option value="1">Snap Claves</option><option value="2">3x Osc Synth</option></select>
-        </div>
-        <div style="display:flex; gap:4px; flex-wrap:wrap;">
-          <button class="btn" onclick="renameChannel(activePianoTrackIndex)">Rename</button>
-          <button class="btn" onclick="replaceChannelPrompt(activePianoTrackIndex)">Replace</button>
-          <button class="btn" onclick="deleteChannel(activePianoTrackIndex)">Delete</button>
-          <button class="btn" onclick="openActiveTrackInPiano()">Open Track</button>
-        </div>
-        <div class="pr-tools-group">
-          <button class="btn active" id="toolSnap" onclick="toggleSnapGrid()">🧲 Snap</button>
-          <button class="btn" onclick="clearActivePianoNotes()">Clear Notes</button>
-          <button class="btn" onclick="quickQuantizeNotes()">Quantize</button>
-        </div>
-      </div>
-      <div class="piano-ruler-container" id="pianoRulerContainer">
-        <div class="piano-ruler-spacer"></div>
-        <div class="piano-ruler-bars" id="pianoRulerBars" onclick="rulerSeek(event)"></div>
-      </div>
-      <div class="piano-roll-outer" id="pianoRollOuter" onscroll="syncScroll()">
-        <div class="piano-keys" id="pianoKeys"></div>
-        <div class="piano-grid-area" id="pianoGrid" onmousedown="onGridMouseDown(event)" onmousemove="onGridMouseMove(event)" onmouseup="onGridMouseUp(event)">
-          <canvas id="pianoGridCanvas" style="position:absolute; top:0; left:0; pointer-events:none;"></canvas>
-          <div class="playhead-line" id="pianoPlayhead" style="left:0px;"></div>
-        </div>
-      </div>
-    </div>
-  </div>
 
-  <div class="popup" id="mixerPopup">
-    <div class="popup-header">
-      <div class="popup-title">Mixer</div>
-      <div class="popup-buttons">
-        <button onclick="togglePopupSize('mixerPopup')">▢</button>
-        <button onclick="closePopup('mixerPopup')">×</button>
-      </div>
-    </div>
-    <div class="popup-body">
-      <div class="mixer-container" id="mixerContainer"><div class="mixer-strip">
-          <div class="mixer-name">Master</div>
-          <div class="fx-slot">EQ 2</div>
-          <div class="fx-slot">Reverb 2</div>
-          <input type="range" class="mixer-slider" min="0" max="1" step="0.01" value="0.8" oninput="updateMixerVol(0, this.value)">
-          <button class="channel-toggle-btn " onclick="toggleMixerMute(0)">M</button>
-        </div><div class="mixer-strip">
-          <div class="mixer-name">Insert 1</div>
-          <div class="fx-slot">EQ 2</div>
-          <div class="fx-slot">Reverb 2</div>
-          <input type="range" class="mixer-slider" min="0" max="1" step="0.01" value="0.8" oninput="updateMixerVol(1, this.value)">
-          <button class="channel-toggle-btn " onclick="toggleMixerMute(1)">M</button>
-        </div><div class="mixer-strip">
-          <div class="mixer-name">Insert 2</div>
-          <div class="fx-slot">EQ 2</div>
-          <div class="fx-slot">Reverb 2</div>
-          <input type="range" class="mixer-slider" min="0" max="1" step="0.01" value="0.8" oninput="updateMixerVol(2, this.value)">
-          <button class="channel-toggle-btn " onclick="toggleMixerMute(2)">M</button>
-        </div></div>
-    </div>
-  </div>
+  <!-- IMPORTANT: JS IS NOW SEPARATE -->
+  <script src="app.js"></script>
 
-  <script>
-    let audioCtx = null;
-    let channels = [
-      { name: 'Trap Kick', type: 'kick', volume: 0.8, pan: 0, muted: false, solo: false, steps: Array(16).fill(false), notes: [], buffer: null },
-      { name: 'Snap Claves', type: 'clap', volume: 0.8, pan: 0, muted: false, solo: false, steps: Array(16).fill(false), notes: [], buffer: null },
-      { name: '3x Osc Synth', type: 'synth', volume: 0.8, pan: 0, muted: false, solo: false, steps: Array(16).fill(false), notes: [], buffer: null }
-    ];
-    let mixerTracks = [{ name: 'Master', volume: 0.8, muted: false }, { name: 'Insert 1', volume: 0.8, muted: false }, { name: 'Insert 2', volume: 0.8, muted: false }];
-    let playlistTracks = [{ name: 'Track 1', clips: [] }, { name: 'Track 2', clips: [] }];
-    let activePianoTrackIndex = 0, snapToGrid = true, isPlaying = false, currentSubdivision = 0, timerId = null, bpm = 130;
-    let playlistTimeModeBars = true, timeModeBars = true, playbackMode = 'pattern';
-    let playingTimeouts = [], activeSources = [], browserFiles = [];
-    let waveformPreviewSource = null, waveformPreviewTimer = null;
-    let stretchMode = false, selectedClip = null;
-    let undoStack = [], redoStack = [];
-    let pianoDragState = null;
-
-    const TOTAL_SUBDIVISIONS = 600, SUBDIV_WIDTH = 40;
-    const NOTES_LIST = ['B', 'A#', 'A', 'G#', 'G', 'F#', 'F', 'E', 'D#', 'D', 'C#', 'C'];
-
-    function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); }
-    function registerActiveSource(node) { if (node) activeSources.push(node); return node; }
-    function stopAllAudio() { playingTimeouts.forEach(t => clearTimeout(t)); playingTimeouts = []; activeSources.forEach(node => { try { node.stop?.(); } catch (e) {} try { node.disconnect?.(); } catch (e) {} }); activeSources = []; stopWaveformPreview(); }
-
-    function stopWaveformPreview() {
-      if (waveformPreviewTimer) clearInterval(waveformPreviewTimer);
-      waveformPreviewTimer = null;
-      const line = document.getElementById('waveformPlayhead');
-      if (line) line.style.display = 'none';
-      if (waveformPreviewSource) {
-        try { waveformPreviewSource.stop(); } catch (e) {}
-        try { waveformPreviewSource.disconnect(); } catch (e) {}
-      }
-      waveformPreviewSource = null;
-    }
-
-    function drawWaveform(buffer, canvas) {
-      if (!canvas || !buffer) return;
-      const ctx = canvas.getContext('2d');
-      const width = canvas.clientWidth || 300;
-      const height = canvas.clientHeight || 120;
-      canvas.width = width;
-      canvas.height = height;
-      ctx.fillStyle = '#0a0d12';
-      ctx.fillRect(0, 0, width, height);
-      const data = buffer.getChannelData(0);
-      const step = Math.ceil(data.length / width);
-      const amp = height / 2;
-      ctx.strokeStyle = '#20c05c';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      for (let i = 0; i < width; i++) {
-        let min = 1.0, max = -1.0;
-        for (let j = 0; j < step; j++) {
-          const datum = data[(i * step) + j];
-          if (datum < min) min = datum;
-          if (datum > max) max = datum;
-        }
-        ctx.moveTo(i, (1 + min) * amp);
-        ctx.lineTo(i, (1 + max) * amp);
-      }
-      ctx.stroke();
-    }
-
-    function drawClipWaveform(clip, canvas) {
-      if (!clip || !canvas) return;
-      const ctx = canvas.getContext('2d');
-      const width = canvas.clientWidth || 100;
-      const height = canvas.clientHeight || 34;
-      canvas.width = width;
-      canvas.height = height;
-      ctx.clearRect(0, 0, width, height);
-      if (!clip.buffer || !clip.buffer.getChannelData) return;
-      const data = clip.buffer.getChannelData(0);
-      const step = Math.max(1, Math.ceil(data.length / width));
-      const amp = height / 2;
-      ctx.strokeStyle = '#eafff2';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      for (let i = 0; i < width; i++) {
-        let min = 1.0, max = -1.0;
-        for (let j = 0; j < step; j++) {
-          const datum = data[(i * step) + j];
-          if (datum < min) min = datum;
-          if (datum > max) max = datum;
-        }
-        ctx.moveTo(i, (1 + min) * amp);
-        ctx.lineTo(i, (1 + max) * amp);
-      }
-      ctx.stroke();
-    }
-
-    function updateBrowserPreview() {
-      const previewFile = document.getElementById('browserPreviewFile');
-      const canvas = document.getElementById('browserWaveformCanvas');
-      const activeSample = channels.find(c => c.buffer) || (browserFiles.length > 0 ? browserFiles[0] : null);
-      if (activeSample && activeSample.buffer) {
-        previewFile.textContent = activeSample.name;
-        drawWaveform(activeSample.buffer, canvas);
-      } else {
-        previewFile.textContent = 'No file selected';
-        const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-      }
-    }
-
-    function previewSelectedAudio() {
-      const sample = channels.find(c => c.buffer) || (browserFiles.length > 0 ? browserFiles[0] : null);
-      if (!sample || !sample.buffer) return;
-      stopWaveformPreview();
-      initAudio();
-      waveformPreviewSource = playSampleBuffer(sample.buffer, 0.8, 0, null, 1.0, false);
-      const line = document.getElementById('waveformPlayhead');
-      line.style.display = 'block';
-      let startT = audioCtx.currentTime;
-      let dur = sample.buffer.duration;
-      waveformPreviewTimer = setInterval(() => {
-        let elapsed = audioCtx.currentTime - startT;
-        if (elapsed >= dur) stopWaveformPreview();
-        else line.style.left = `${(elapsed / dur) * 100}%`;
-      }, 30);
-    }
-
-    function playTone(freq, type = 'sine', duration = 0.2, volume = 0.8, pan = 0, masterGainNode = null) {
-      initAudio(); if (!audioCtx) return;
-      const t = audioCtx.currentTime, osc = registerActiveSource(audioCtx.createOscillator()), gain = audioCtx.createGain();
-      osc.type = type; osc.frequency.setValueAtTime(freq, t);
-      gain.gain.setValueAtTime(0.0001, t); gain.gain.exponentialRampToValueAtTime(Math.max(0.001, 0.25 * volume), t + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
-      const panner = audioCtx.createStereoPanner ? audioCtx.createStereoPanner() : null;
-      if (panner) panner.pan.setValueAtTime(pan, t);
-      const dst = masterGainNode || audioCtx.destination;
-      osc.connect(gain); if (panner) { gain.connect(panner); panner.connect(dst); } else gain.connect(dst);
-      osc.start(t); osc.stop(t + duration);
-    }
-
-    function playSampleBuffer(buffer, volume = 0.8, pan = 0, masterGainNode = null, playbackRate = 1.0, stretch = false) {
-      initAudio(); if (!audioCtx || !buffer) return;
-      const src = registerActiveSource(audioCtx.createBufferSource()), gain = audioCtx.createGain(), panner = audioCtx.createStereoPanner ? audioCtx.createStereoPanner() : null;
-      src.buffer = buffer; src.playbackRate.setValueAtTime(stretch ? 1.0 : playbackRate, audioCtx.currentTime);
-      gain.gain.setValueAtTime(volume, audioCtx.currentTime); if (panner) panner.pan.setValueAtTime(pan, audioCtx.currentTime);
-      const dst = masterGainNode || audioCtx.destination;
-      src.connect(gain); if (panner) { gain.connect(panner); panner.connect(dst); } else gain.connect(dst);
-      src.start();
-      return src;
-    }
-
-    function playSound(channel, noteFreq = null, notePitch = null) {
-      if (!channel || channel.muted) return; initAudio(); if (!audioCtx) return;
-      const vol = channel.volume ?? 0.8, pan = channel.pan ?? 0, mixerNode = channel.gainNode || null, stretch = channel.stretch || false;
-      if (channel.type === 'sample' && channel.buffer) {
-        let rate = 1.0;
-        if (notePitch !== null && channel.rootKeyPitch !== undefined) rate = Math.pow(2, (notePitch - channel.rootKeyPitch) / 12);
-        playSampleBuffer(channel.buffer, vol, pan, mixerNode, rate, stretch); return;
-      }
-      if (noteFreq !== null) return playTone(noteFreq, channel.type === 'bass' ? 'square' : 'sawtooth', 0.25, vol, pan, mixerNode);
-      if (channel.type === 'kick') playTone(140, 'sine', 0.4, vol, pan, mixerNode);
-      else if (channel.type === 'clap') playTone(800, 'square', 0.08, vol, pan, mixerNode);
-      else if (channel.type === 'synth') playTone(440, 'sawtooth', 0.25, vol, pan, mixerNode);
-      else if (channel.type === 'bass') playTone(110, 'square', 0.3, vol, pan, mixerNode);
-      else playTone(300, 'sine', 0.1, vol, pan, mixerNode);
-    }
-
-    function midiToFreq(midiNote) { return 440 * Math.pow(2, (midiNote - 69) / 12); }
-    function togglePlay() { if (isPlaying) stopPlay(); else startPlay(); }
-
-    function startPlay() {
-      initAudio(); stopPlay(); isPlaying = true; document.getElementById('playBtn').classList.add('active');
-      const stepTime = (60 / bpm) / 4; let currentSub = currentSubdivision; const intervalMs = stepTime * 1000;
-      timerId = setInterval(() => {
-        channels.forEach((ch) => {
-          if (playbackMode === 'pattern' && ch.steps[currentSub % 16]) playSound(ch);
-          ch.notes.forEach(note => {
-            if (playbackMode === 'pattern' && note.start === (currentSub % 16)) playSound(ch, midiToFreq(note.pitch), note.pitch);
-            else if (playbackMode === 'song' && note.start === currentSub) playSound(ch, midiToFreq(note.pitch), note.pitch);
-          });
-        });
-        if (playbackMode === 'song') {
-          playlistTracks.forEach(track => {
-            track.clips.forEach(clip => {
-              if (currentSub >= clip.start && currentSub < clip.start + clip.duration) {
-                let localStep = (currentSub - clip.start) % 16;
-                channels.forEach(ch => { if (ch.steps[localStep]) playSound(ch); });
-              }
-            });
-          });
-        }
-        updatePlayheadUI(currentSub);
-        currentSubdivision = (currentSubdivision + 1) % TOTAL_SUBDIVISIONS;
-        currentSub = currentSubdivision;
-      }, intervalMs);
-    }
-
-    function stopPlay() {
-      isPlaying = false;
-      document.getElementById('playBtn').classList.remove('active');
-      if (timerId) clearInterval(timerId);
-      timerId = null;
-      stopAllAudio();
-      updatePlayheadUI(0);
-    }
-
-    function updatePlayheadUI(subdiv) {
-      const leftPos = subdiv * SUBDIV_WIDTH;
-      const pianoPh = document.getElementById('pianoPlayhead');
-      if (pianoPh) pianoPh.style.left = leftPos + 'px';
-      const bars = Math.floor(subdiv / 16) + 1;
-      const beats = Math.floor((subdiv % 16) / 4) + 1;
-      const valEl = document.getElementById('timeDisplayValue');
-      if (valEl) valEl.textContent = `${bars} : ${beats}`;
-    }
-
-    function changeBpm(delta) { bpm = Math.max(40, Math.min(300, bpm + delta)); document.getElementById('bpmDisplay').textContent = bpm; }
-    function togglePlaybackMode() {
-      playbackMode = playbackMode === 'pattern' ? 'song' : 'pattern';
-      const btn = document.getElementById('modeBtn');
-      if (playbackMode === 'song') { btn.textContent = 'Mode: SONG'; btn.classList.add('song-mode'); }
-      else { btn.textContent = 'Mode: PATTERN'; btn.classList.remove('song-mode'); }
-    }
-    function toggleTimeMode() { timeModeBars = !timeModeBars; document.getElementById('timeDisplayLabel').textContent = timeModeBars ? 'Beats / Bars' : 'Seconds'; }
-    function togglePlaylistTimeMode() {}
-
-    function openPopup(id) {
-      document.getElementById(id).classList.add('open');
-      if (id === 'sequencerPopup') renderChannelRack();
-      if (id === 'pianoPopup') { renderPianoKeys(); renderPianoGrid(); updatePianoTrackSelect(); }
-      if (id === 'mixerPopup') renderMixer();
-    }
-
-    function closePopup(id) { document.getElementById(id).classList.remove('open'); }
-    function togglePopupSize(id) { document.getElementById(id).classList.toggle('minimized'); }
-
-    function showMainPlaylist() {
-      document.querySelectorAll('.w-tab').forEach(t => t.classList.remove('active'));
-      event.target.classList.add('active');
-      renderPlaylist();
-    }
-
-    function renderChannelRack() {
-      const container = document.getElementById('channelRack');
-      if (!container) return;
-      container.innerHTML = '';
-      channels.forEach((ch, idx) => {
-        const row = document.createElement('div');
-        row.className = 'channel-row';
-        row.innerHTML = `
-          <div class="channel-info">
-            <div class="channel-name-container">
-              <span class="channel-name" onclick="openChannelPiano(${idx})">${ch.name}</span>
-              <span class="channel-key-badge">${ch.type}</span>
-            </div>
-            <div class="channel-controls-inner">
-              <button class="btn" style="padding:2px 6px; font-size:0.65rem;" onclick="openChannelPiano(${idx})">🎹 Open</button>
-              <div class="channel-knob-group">
-                <span>VOL</span>
-                <input type="range" min="0" max="1" step="0.01" value="${ch.volume}" oninput="updateChannelVol(${idx}, this.value)">
-              </div>
-              <div class="channel-knob-group">
-                <span>PAN</span>
-                <input type="range" min="-1" max="1" step="0.01" value="${ch.pan}" oninput="updateChannelPan(${idx}, this.value)">
-              </div>
-              <div class="channel-btn-toggles">
-                <button class="channel-toggle-btn ${ch.muted ? 'active-mute' : ''}" onclick="toggleChannelMute(${idx})">M</button>
-                <button class="channel-toggle-btn ${ch.solo ? 'active-solo' : ''}" onclick="toggleChannelSolo(${idx})">S</button>
-              </div>
-            </div>
-          </div>
-          <div class="steps-grid">
-            ${ch.steps.map((active, sIdx) => `<div class="step ${active ? 'active' : ''}" onclick="toggleStep(${idx}, ${sIdx})"></div>`).join('')}
-          </div>
-        `;
-        container.appendChild(row);
-      });
-    }
-
-    function toggleStep(chIdx, stepIdx) { channels[chIdx].steps[stepIdx] = !channels[chIdx].steps[stepIdx]; renderChannelRack(); }
-    function updateChannelVol(idx, val) { channels[idx].volume = parseFloat(val); }
-    function updateChannelPan(idx, val) { channels[idx].pan = parseFloat(val); }
-    function toggleChannelMute(idx) { channels[idx].muted = !channels[idx].muted; renderChannelRack(); }
-    function toggleChannelSolo(idx) { channels[idx].solo = !channels[idx].solo; renderChannelRack(); }
-
-    function addChannel(name, type) {
-      channels.push({ name, type, volume: 0.8, pan: 0, muted: false, solo: false, steps: Array(16).fill(false), notes: [], buffer: null });
-      renderChannelRack();
-      updatePianoTrackSelect();
-    }
-
-    function deleteChannel(idx) {
-      if (channels.length <= 1) return;
-      channels.splice(idx, 1);
-      activePianoTrackIndex = Math.min(activePianoTrackIndex, channels.length - 1);
-      renderChannelRack();
-      updatePianoTrackSelect();
-      renderPianoGrid();
-    }
-
-    function renameChannel(idx) {
-      if (idx < 0 || idx >= channels.length) return;
-      const newName = prompt('Rename channel:', channels[idx].name);
-      if (newName) { channels[idx].name = newName; renderChannelRack(); updatePianoTrackSelect(); }
-    }
-
-    function replaceChannelPrompt(idx) {
-      if (idx < 0 || idx >= channels.length) return;
-      const type = prompt('Enter new type (synth, bass, kick, clap):', channels[idx].type);
-      if (type) { channels[idx].type = type; channels[idx].name = type.toUpperCase() + ' Channel'; renderChannelRack(); updatePianoTrackSelect(); }
-    }
-
-    function openChannelPiano(idx) { activePianoTrackIndex = idx; openPopup('pianoPopup'); document.getElementById('pianoTrackSelect').value = idx; }
-    function openActiveTrackInPiano() { openPopup('pianoPopup'); }
-
-    function updatePianoTrackSelect() {
-      const sel = document.getElementById('pianoTrackSelect');
-      if (!sel) return;
-      sel.innerHTML = channels.map((ch, idx) => `<option value="${idx}" ${idx === activePianoTrackIndex ? 'selected' : ''}>${ch.name}</option>`).join('');
-    }
-
-    function changeActivePianoTrack(val) { activePianoTrackIndex = parseInt(val); renderPianoGrid(); }
-
-    function renderPianoKeys() {
-      const container = document.getElementById('pianoKeys');
-      if (!container) return;
-      let html = '';
-      for (let midi = 127; midi >= 0; midi--) {
-        const noteName = NOTES_LIST[midi % 12] + Math.floor(midi / 12 - 1);
-        const isBlack = [1, 3, 6, 8, 10].includes(midi % 12);
-        html += `<div class="piano-key ${isBlack ? 'black' : ''}" onclick="playPianoKeyPreview(${midi})">${noteName}</div>`;
-      }
-      container.innerHTML = html;
-    }
-
-    function playPianoKeyPreview(midi) { playSound(channels[activePianoTrackIndex], midiToFreq(midi), midi); }
-
-    function renderPianoGrid() {
-      const grid = document.getElementById('pianoGrid');
-      if (!grid) return;
-      grid.querySelectorAll('.piano-note').forEach(el => el.remove());
-      const ch = channels[activePianoTrackIndex];
-      if (!ch || !ch.notes) return;
-      ch.notes.forEach((note, nIdx) => {
-        const noteEl = document.createElement('div');
-        noteEl.className = 'piano-note';
-        noteEl.style.left = (note.start * SUBDIV_WIDTH) + 'px';
-        noteEl.style.top = ((127 - note.pitch) * 18) + 'px';
-        noteEl.style.width = (note.duration * SUBDIV_WIDTH) + 'px';
-        noteEl.style.height = '17px';
-        noteEl.title = `Pitch: ${note.pitch}`;
-        noteEl.onclick = (e) => { e.stopPropagation(); ch.notes.splice(nIdx, 1); renderPianoGrid(); };
-        noteEl.onmousedown = (e) => startNoteDrag(e, note, nIdx);
-
-        const handle = document.createElement('div');
-        handle.className = 'note-resize-handle';
-        handle.onmousedown = (e) => startNoteResize(e, note);
-
-        noteEl.appendChild(handle);
-        grid.appendChild(noteEl);
-      });
-      const rulerBars = document.getElementById('pianoRulerBars');
-      if (rulerBars) {
-        let barsHtml = '';
-        for (let i = 0; i < 150; i++) barsHtml += `<div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">${i+1}</div>`;
-        rulerBars.innerHTML = barsHtml;
-      }
-    }
-
-    function startNoteDrag(e, note) {
-      if (e.target.classList.contains('note-resize-handle')) return;
-      e.stopPropagation();
-      const startX = e.clientX;
-      const startY = e.clientY;
-      const startNote = { start: note.start, pitch: note.pitch };
-      const onMove = (ev) => {
-        const dx = Math.round((ev.clientX - startX) / SUBDIV_WIDTH);
-        const dy = Math.round((ev.clientY - startY) / 18);
-        note.start = Math.max(0, startNote.start + dx);
-        note.pitch = Math.max(0, Math.min(127, startNote.pitch - dy));
-        renderPianoGrid();
-      };
-      const onUp = () => {
-        window.removeEventListener('mousemove', onMove);
-        window.removeEventListener('mouseup', onUp);
-      };
-      window.addEventListener('mousemove', onMove);
-      window.addEventListener('mouseup', onUp);
-    }
-
-    function startNoteResize(e, note) {
-      e.stopPropagation();
-      const startX = e.clientX;
-      const startDuration = note.duration;
-      const onMove = (ev) => {
-        const delta = Math.round((ev.clientX - startX) / SUBDIV_WIDTH);
-        note.duration = Math.max(1, startDuration + delta);
-        renderPianoGrid();
-      };
-      const onUp = () => {
-        window.removeEventListener('mousemove', onMove);
-        window.removeEventListener('mouseup', onUp);
-      };
-      window.addEventListener('mousemove', onMove);
-      window.addEventListener('mouseup', onUp);
-    }
-
-    function toggleSnapGrid() { snapToGrid = !snapToGrid; const btn = document.getElementById('toolSnap'); btn.classList.toggle('active', snapToGrid); }
-    function clearActivePianoNotes() { channels[activePianoTrackIndex].notes = []; renderPianoGrid(); }
-    function quickQuantizeNotes() { const ch = channels[activePianoTrackIndex]; ch.notes.forEach(note => { note.start = Math.round(note.start / 4) * 4; }); renderPianoGrid(); }
-
-    function onGridMouseDown(e) {
-      if (e.button !== 0) return;
-      const rect = e.currentTarget.getBoundingClientRect();
-      const scrollLeft = document.getElementById('pianoRollOuter').scrollLeft;
-      const x = e.clientX - rect.left + scrollLeft;
-      const y = e.clientY - rect.top;
-      const subdiv = Math.floor(x / SUBDIV_WIDTH);
-      const pitch = 127 - Math.floor(y / 18);
-      const ch = channels[activePianoTrackIndex];
-      ch.notes.push({ start: subdiv, pitch: pitch, duration: 4 });
-      pianoDragState = { note: ch.notes[ch.notes.length - 1], startX: e.clientX, startY: e.clientY, startStart: subdiv, startPitch: pitch, startDuration: 4, mode: 'drag' };
-
-      const onMove = (ev) => {
-        if (!pianoDragState || pianoDragState.mode !== 'drag') return;
-        const dx = Math.round((ev.clientX - pianoDragState.startX) / SUBDIV_WIDTH);
-        const dy = Math.round((ev.clientY - pianoDragState.startY) / 18);
-        pianoDragState.note.start = Math.max(0, pianoDragState.startStart + dx);
-        pianoDragState.note.pitch = Math.max(0, Math.min(127, pianoDragState.startPitch - dy));
-        renderPianoGrid();
-      };
-
-      const onUp = () => {
-        pianoDragState = null;
-        window.removeEventListener('mousemove', onMove);
-        window.removeEventListener('mouseup', onUp);
-      };
-
-      window.addEventListener('mousemove', onMove);
-      window.addEventListener('mouseup', onUp);
-      renderPianoGrid();
-    }
-
-    function onGridMouseMove(e) {}
-    function onGridMouseUp(e) {}
-    function syncScroll() {}
-
-    function rulerSeek(e) {
-      const rect = e.currentTarget.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const subdiv = Math.floor(x / (SUBDIV_WIDTH * 4));
-      currentSubdivision = subdiv * 4;
-      updatePlayheadUI(currentSubdivision);
-    }
-
-    function renderPlaylist() {
-      const container = document.getElementById('playlistContainer');
-      if (!container) return;
-      container.innerHTML = '';
-      playlistTracks.forEach((track, tIdx) => {
-        const row = document.createElement('div');
-        row.className = 'playlist-row';
-        row.innerHTML = `
-          <div class="playlist-label">
-            <span class="track-name">${track.name}</span>
-            <div class="track-actions">
-              <button class="btn" style="padding:1px 4px; font-size:0.6rem;" onclick="removePlaylistTrack(${tIdx})">×</button>
-            </div>
-          </div>
-          <div class="playlist-grid-row" onclick="addPlaylistClip(${tIdx}, event)">
-            ${track.clips.map((clip, cIdx) => {
-              const isSampleClip = clip.sourceBuffer;
-              return `
-                <div class="playlist-clip ${selectedClip && selectedClip.tIdx === tIdx && selectedClip.cIdx === cIdx ? 'selected' : ''}" style="left:${clip.start * SUBDIV_WIDTH}px; width:${clip.duration * SUBDIV_WIDTH}px;" onclick="selectClip(event, ${tIdx}, ${cIdx})">
-                  ${isSampleClip ? '<canvas class="clip-waveform"></canvas>' : ''}
-                  <span>${isSampleClip ? clip.name || 'Audio Clip' : 'Pattern Clip'}</span>
-                  <div class="clip-resize-handle"></div>
-                </div>
-              `;
-            }).join('')}
-          </div>
-        `;
-        container.appendChild(row);
-      });
-
-      requestAnimationFrame(() => {
-        document.querySelectorAll('.playlist-clip').forEach((clipEl, i) => {
-          const clipData = getPlaylistClipByElementIndex(i);
-          const canvas = clipEl.querySelector('.clip-waveform');
-          if (clipData && canvas && clipData.sourceBuffer) drawClipWaveform(clipData, canvas);
-        });
-      });
-
-      const ruler = document.getElementById('playlistRulerBars');
-      if (ruler) {
-        let html = '';
-        for (let i = 0; i < 150; i++) html += `<div style="width:160px; border-right:1px solid #444; font-size:0.6rem; padding-left:4px; color:#888;">${i+1}</div>`;
-        ruler.innerHTML = html;
-      }
-    }
-
-    function getPlaylistClipByElementIndex(flatIndex) {
-      let count = 0;
-      for (const track of playlistTracks) {
-        for (const clip of track.clips) {
-          if (count === flatIndex) return clip;
-          count++;
-        }
-      }
-      return null;
-    }
-
-    function addPlaylistTrack() { playlistTracks.push({ name: `Track ${playlistTracks.length + 1}`, clips: [] }); renderPlaylist(); }
-    function removePlaylistTrack(idx) { if (playlistTracks.length <= 1) return; playlistTracks.splice(idx, 1); renderPlaylist(); }
-
-    function addPlaylistClip(trackIdx, e) {
-      if (e.target !== e.currentTarget) return;
-      const rect = e.currentTarget.getBoundingClientRect();
-      const wrapper = document.getElementById('playlistWrapper');
-      const scrollLeft = wrapper ? wrapper.scrollLeft : 0;
-      const x = e.clientX - rect.left + scrollLeft;
-      const subdiv = Math.floor(x / SUBDIV_WIDTH);
-      playlistTracks[trackIdx].clips.push({ start: subdiv, duration: 16 });
-      renderPlaylist();
-    }
-
-    function selectClip(e, tIdx, cIdx) { e.stopPropagation(); selectedClip = { tIdx, cIdx }; renderPlaylist(); }
-    function chopActiveClip() { if (!selectedClip) return; const clip = playlistTracks[selectedClip.tIdx].clips[selectedClip.cIdx]; if (clip.duration > 4) { const half = clip.duration / 2; clip.duration = half; playlistTracks[selectedClip.tIdx].clips.push({ start: clip.start + half, duration: half }); renderPlaylist(); } }
-    function splitActiveClip() { chopActiveClip(); }
-
-    function toggleStretchMode() {
-      stretchMode = !stretchMode;
-      const btn = document.getElementById('stretchToggleBtn');
-      btn.textContent = `Stretch: ${stretchMode ? 'ON' : 'OFF'}`;
-      btn.classList.toggle('active', stretchMode);
-    }
-
-    function playlistRulerSeek(e) {
-      const rect = e.currentTarget.getBoundingClientRect();
-      const wrapper = document.getElementById('playlistWrapper');
-      const scrollLeft = wrapper ? wrapper.scrollLeft : 0;
-      const x = e.clientX - rect.left + scrollLeft;
-      currentSubdivision = Math.floor(x / SUBDIV_WIDTH);
-      updatePlayheadUI(currentSubdivision);
-    }
-
-    function renderMixer() {
-      const container = document.getElementById('mixerContainer');
-      if (!container) return;
-      container.innerHTML = '';
-      mixerTracks.forEach((track, idx) => {
-        const strip = document.createElement('div');
-        strip.className = 'mixer-strip';
-        strip.innerHTML = `
-          <div class="mixer-name">${track.name}</div>
-          <div class="fx-slot">EQ 2</div>
-          <div class="fx-slot">Reverb 2</div>
-          <input type="range" class="mixer-slider" min="0" max="1" step="0.01" value="${track.volume}" oninput="updateMixerVol(${idx}, this.value)">
-          <button class="channel-toggle-btn ${track.muted ? 'active-mute' : ''}" onclick="toggleMixerMute(${idx})">M</button>
-        `;
-        container.appendChild(strip);
-      });
-    }
-
-    function updateMixerVol(idx, val) { mixerTracks[idx].volume = parseFloat(val); }
-    function toggleMixerMute(idx) { mixerTracks[idx].muted = !mixerTracks[idx].muted; renderMixer(); }
-
-    function importDrumkitFolder(event) {
-      const files = Array.from(event.target.files || []).filter(f => f.type.startsWith('audio/'));
-      if (!files.length) return;
-      initAudio();
-      files.forEach((file, index) => {
-        const reader = new FileReader();
-        reader.onload = ev => {
-          audioCtx.decodeAudioData(ev.target.result, buffer => {
-            const name = file.webkitRelativePath ? file.webkitRelativePath.split('/').pop() : file.name;
-            const channel = { name: name.replace(/\.[^/.]+$/, '').slice(0, 20), type: 'sample', volume: 0.8, pan: 0, muted: false, solo: false, steps: Array(16).fill(false), notes: [], buffer, rootKeyPitch: 60 };
-            channels.push(channel);
-            if (index === 0) playlistTracks[0].clips.push({ start: 0, duration: Math.max(4, Math.ceil(buffer.duration * 4)), name: channel.name, sourceBuffer: buffer });
-            renderChannelRack();
-            updatePianoTrackSelect();
-            updateBrowserPreview();
-            renderPlaylist();
-          });
-        };
-        reader.readAsArrayBuffer(file);
-      });
-    }
-
-    function exportAppPackage() {
-      const html = document.documentElement.outerHTML;
-      const blob = new Blob([html], { type: 'text/html' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'beatforge-studio.html';
-      a.click();
-    }
-
-    function newProject() {
-      if (confirm('Create new project? Unsaved changes will be lost.')) {
-        channels = [{ name: 'Trap Kick', type: 'kick', volume: 0.8, pan: 0, muted: false, solo: false, steps: Array(16).fill(false), notes: [], buffer: null }];
-        playlistTracks = [{ name: 'Track 1', clips: [] }];
-        renderChannelRack();
-        renderPlaylist();
-        renderMixer();
-      }
-    }
-
-    function saveProject() {
-      const data = JSON.stringify({ bpm, channels, playlistTracks, mixerTracks });
-      const blob = new Blob([data], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'project.beatforge';
-      a.click();
-    }
-
-    function loadProjectPrompt() {
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = '.beatforge,.json';
-      input.onchange = e => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = event => {
-          try {
-            const proj = JSON.parse(event.target.result);
-            bpm = proj.bpm || 130;
-            channels = proj.channels || channels;
-            playlistTracks = proj.playlistTracks || playlistTracks;
-            mixerTracks = proj.mixerTracks || mixerTracks;
-            document.getElementById('bpmDisplay').textContent = bpm;
-            renderChannelRack();
-            renderPlaylist();
-            renderMixer();
-            updatePianoTrackSelect();
-          } catch(err) {
-            alert('Invalid project file format.');
-          }
-        };
-        reader.readAsText(file);
-      };
-      input.click();
-    }
-
-    function importAudioSample(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = event => {
-        initAudio();
-        audioCtx.decodeAudioData(event.target.result, buffer => {
-          channels.push({ name: file.name.substring(0, 12), type: 'sample', volume: 0.8, pan: 0, muted: false, solo: false, steps: Array(16).fill(false), notes: [], buffer: buffer, rootKeyPitch: 60 });
-          playlistTracks[0].clips.push({ start: 0, duration: Math.max(4, Math.ceil(buffer.duration * 4)), name: file.name.substring(0, 12), sourceBuffer: buffer });
-          renderChannelRack();
-          updatePianoTrackSelect();
-          updateBrowserPreview();
-          renderPlaylist();
-        });
-      };
-      reader.readAsArrayBuffer(file);
-    }
-
-    function undo() { if (undoStack.length > 0) {} }
-    function redo() { if (redoStack.length > 0) {} }
-
-    window.onload = () => {
-      renderChannelRack();
-      renderPlaylist();
-      renderMixer();
-      updatePianoTrackSelect();
-    };
-  </script>
-
-</body></html>
+</body>
+</html>
